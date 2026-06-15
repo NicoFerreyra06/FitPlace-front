@@ -15,12 +15,17 @@ export const getMisGimnasios = async () => {
   return response.data;
 };
 
-export const updateGimnasio = async (gimnasioData) => {
-  const response = await api.put('/gimnasios/me', gimnasioData);
+export const updateGimnasio = async (id, gimnasioData) => {
+  const response = await api.put(`/gimnasios/me/${id}`, gimnasioData);
   return response.data;
 };
 
 export const activarSuscripcion = async (idSuscripcion) => {
   const response = await api.put(`/suscripciones/${idSuscripcion}/activar`);
+  return response.data;
+};
+
+export const getMiembrosGimnasio = async (gimnasioId) => {
+  const response = await api.get(`/gimnasios/me/suscripciones/${gimnasioId}`);
   return response.data;
 };

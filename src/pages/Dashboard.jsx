@@ -11,6 +11,7 @@ import AdminPanel from '../components/AdminPanel';
 import AdminGimnasioPanel from '../components/AdminGimnasioPanel';
 import TrainerDashboard from '../components/TrainerDashboard';
 import MiProgreso from '../components/MiProgreso';
+import DiscoverRoutines from '../components/DiscoverRoutines';
 
 // Sidebar icons as inline SVGs for zero dependencies
 const icons = {
@@ -69,6 +70,11 @@ const icons = {
       <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
     </svg>
   ),
+  search: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+  ),
 };
 
 function getTabsForRole(rol) {
@@ -77,6 +83,7 @@ function getTabsForRole(rol) {
     { id: 'perfil', label: 'Perfil', icon: icons.user },
     { id: 'misRutinas', label: 'Rutinas', icon: icons.calendar },
     { id: 'crearRutina', label: 'Crear', icon: icons.plus },
+    { id: 'descubrir', label: 'Descubrir', icon: icons.search },
     { id: 'entrenamiento', label: 'Registro', icon: icons.activity },
     { id: 'progreso', label: 'Mi Progreso', icon: icons.history },
     { id: 'amigos', label: 'Social', icon: icons.users },
@@ -96,6 +103,7 @@ function getTabsForRole(rol) {
     return [
       ...base,
       { id: 'admin', label: 'Admin', icon: icons.shield },
+      { id: 'adminGimnasio', label: 'Mi Gym', icon: icons.building },
     ];
   }
 
@@ -130,6 +138,8 @@ export default function Dashboard() {
         return <CreateRoutine onNavigate={setActiveTab} editingRoutine={editingRoutine} setEditingRoutine={setEditingRoutine} />;
       case 'entrenamiento':
         return <TrainingLog />;
+      case 'descubrir':
+        return <DiscoverRoutines onNavigate={setActiveTab} />;
       case 'progreso':
         return <MiProgreso />;
       case 'amigos':
@@ -190,6 +200,7 @@ export default function Dashboard() {
               {activeTab === 'perfil' && 'Mi Perfil'}
               {activeTab === 'misRutinas' && 'Mis Rutinas'}
               {activeTab === 'crearRutina' && 'Diseñar Rutina'}
+              {activeTab === 'descubrir' && 'Descubrir Rutinas'}
               {activeTab === 'entrenamiento' && 'Registrar Entrenamiento'}
               {activeTab === 'progreso' && 'Progreso y Estadísticas'}
               {activeTab === 'amigos' && 'Comunidad'}
@@ -198,8 +209,8 @@ export default function Dashboard() {
               {activeTab === 'adminGimnasio' && 'Mi Gimnasio'}
               {activeTab === 'trainer' && 'Mis Alumnos'}
             </h1>
-            <p className="header-sub">
-              Bienvenido, <strong>{user.username}</strong>
+            <p className="header-sub" style={{textDecoration: 'none'}}>
+              Bienvenido, <strong style={{textTransform: 'capitalize', textDecoration: 'none'}}>{user.nombre ? user.nombre : user.username.split('@')[0]}</strong>
               <span className="role-badge">{user.rol}</span>
             </p>
           </div>

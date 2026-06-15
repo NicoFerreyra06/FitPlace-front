@@ -45,8 +45,14 @@ export const getAlumnos = async () => {
   return response.data;
 };
 
-export const getUsuariosList = async (page = 0, size = 50) => {
-  const response = await api.get(`/usuarios?page=${page}&size=${size}`);
+/** Cualquier usuario autenticado — GET /usuarios/{id} */
+export const getUsuarioById = async (id) => {
+  const response = await api.get(`/usuarios/${id}`);
   return response.data;
 };
 
+/** Solo rol ADMIN — GET /usuarios?page=&size= */
+export const getUsuarios = async (page = 0, size = 20) => {
+  const response = await api.get(`/usuarios?page=${page}&size=${size}`);
+  return response.data;
+};

@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getMisGimnasios, updateGimnasio, activarSuscripcion } from '../services/adminService';
+import { getMisGimnasios, updateGimnasio, activarSuscripcion, getMiembrosGimnasio, deleteGimnasio } from '../services/adminService';
 
 export default function AdminGimnasioPanel() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [misGimnasios, setMisGimnasios] = useState([]);
   const [miGimnasio, setMiGimnasio] = useState(null);
+  const [miembros, setMiembros] = useState([]);
   const [toast, setToast] = useState('');
   const [subIdInput, setSubIdInput] = useState('');
 
@@ -18,50 +20,103 @@ export default function AdminGimnasioPanel() {
   };
 
   useEffect(() => {
-    if (user?.rol === 'ADMIN_GIMNASIO') {
+    if (user?.rol === 'ADMIN_GIMNASIO' || user?.rol === 'ADMIN') {
       loadData();
     }
   }, [user]);
 
-  const loadData = async () => {
+  const loadData = async (gymIdToSelect = null) => {
     setLoading(true);
     try {
       const data = await getMisGimnasios();
+      setMisGimnasios(data || []);
       if (data && data.length > 0) {
-        const gym = data[0];
-        setMiGimnasio(gym);
-        setGymForm({
-          nombre: gym.nombre || '',
-          direccion: gym.direccion || '',
-          horarioApertura: gym.horarioApertura?.substring(0, 5) || '08:00',
-          horarioCierre: gym.horarioCierre?.substring(0, 5) || '22:00',
-          diasAbierto: gym.diasAbierto || ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY'],
-          precioCuota: gym.precioCuota || 0
-        });
+        let gym = data[0];
+        if (gymIdToSelect) {
+          gym = data.find(g => g.id === gymIdToSelect) || data[0];
+        } else if (miGimnasio) {
+          gym = data.find(g => g.id === miGimnasio.id) || data[0];
+        }
+        selectGym(gym);
+      } else {
+        setMiGimnasio(null);
       }
     } catch (err) {
-      console.error('Error loading gym', err);
+      console.error('Error loading gyms', err);
     } finally {
       setLoading(false);
     }
   };
 
-  if (user?.rol !== 'ADMIN_GIMNASIO') {
+  const selectGym = async (gym) => {
+    setMiGimnasio(gym);
+    setGymForm({
+      nombre: gym.nombre || '',
+      direccion: gym.direccion || '',
+      horarioApertura: gym.horarioApertura?.substring(0, 5) || '08:00',
+      horarioCierre: gym.horarioCierre?.substring(0, 5) || '22:00',
+      diasAbierto: gym.diasAbierto || ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY'],
+      precioCuota: gym.precioCuota || 0
+    });
+    // Cargar miembros del gimnasio seleccionado
+    try {
+      const miembrosData = await getMiembrosGimnasio(gym.id);
+      setMiembros(miembrosData || []);
+    } catch {
+      setMiembros([]);
+    }
+  };
+
+  if (user?.rol !== 'ADMIN_GIMNASIO' && user?.rol !== 'ADMIN') {
     return <div className="alert alert-error">Exclusivo para Dueños/Administradores de Gimnasios.</div>;
   }
 
   const handleUpdateGym = async (e) => {
     e.preventDefault();
     try {
-      await updateGimnasio({
+      const payload = {
         ...gymForm,
+        precioCuota: parseFloat(gymForm.precioCuota),
         horarioApertura: gymForm.horarioApertura + ':00',
         horarioCierre: gymForm.horarioCierre + ':00'
-      });
+      };
+      console.log('[updateGimnasio] payload enviado:', payload);
+      await updateGimnasio(miGimnasio.id, payload);
       showToast('Configuración del gimnasio actualizada');
-      loadData();
+      loadData(miGimnasio.id);
     } catch (err) {
-      showToast(err.response?.data?.message || 'Error al actualizar el gimnasio');
+      console.error('[updateGimnasio] error completo:', err.response);
+      const data = err.response?.data;
+      const fieldErrors = data?.fieldErrors || data?.errors;
+      if (fieldErrors && fieldErrors.length > 0) {
+        const msgs = fieldErrors.map(fe => fe.defaultMessage || fe.message || JSON.stringify(fe)).join(' | ');
+        showToast(msgs);
+      } else if (data?.message) {
+        showToast(data.message);
+      } else if (typeof data === 'string') {
+        showToast(data);
+      } else {
+        showToast('Error al actualizar el gimnasio (código ' + err.response?.status + ')');
+      }
+    }
+  };
+
+  const handleDeleteGym = async () => {
+    if (!window.confirm('¿Estás seguro que querés eliminar este gimnasio? Esta acción no se puede deshacer.')) return;
+    try {
+      await deleteGimnasio(miGimnasio.id);
+      showToast('Gimnasio eliminado correctamente');
+      setMisGimnasios(prev => prev.filter(g => g.id !== miGimnasio.id));
+      if (misGimnasios.length > 1) {
+        loadData();
+      } else {
+        setMiGimnasio(null);
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error('Error al eliminar gimnasio:', err);
+      const data = err.response?.data;
+      showToast(data?.message || (typeof data === 'string' ? data : null) || 'Error al eliminar el gimnasio');
     }
   };
 
@@ -72,8 +127,11 @@ export default function AdminGimnasioPanel() {
       await activarSuscripcion(subIdInput);
       showToast('Suscripción activada con éxito');
       setSubIdInput('');
+      loadData();
     } catch (err) {
-      showToast(err.response?.data?.message || 'Error al activar suscripción');
+      const data = err.response?.data;
+      const msg = data?.message || (typeof data === 'string' ? data : null) || 'Error al activar suscripción (Status: ' + err.response?.status + ')';
+      showToast(msg);
     }
   };
 
@@ -81,6 +139,21 @@ export default function AdminGimnasioPanel() {
     <div className="animate-fade-in flex-col gap-lg">
 
       {/* ── Header ──────────────────────────────── */}
+      {misGimnasios.length > 1 && (
+        <div className="tabs mb-md" style={{ display: 'inline-flex', maxWidth: '100%', overflowX: 'auto' }}>
+          {misGimnasios.map(g => (
+            <button
+              key={g.id}
+              className={`tab ${miGimnasio?.id === g.id ? 'active' : ''}`}
+              onClick={() => selectGym(g)}
+              style={{ whiteSpace: 'nowrap' }}
+            >
+              {g.nombre || 'Sin nombre'}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="section-header">
         <div>
           <h2 className="section-title text-2xl font-bold flex items-center gap-sm">
@@ -88,7 +161,7 @@ export default function AdminGimnasioPanel() {
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
               <polyline points="9 22 9 12 15 12 15 22"/>
             </svg>
-            Mi Gimnasio
+            {misGimnasios.length > 1 ? `Administrando: ${miGimnasio?.nombre}` : 'Mi Gimnasio'}
           </h2>
           <p className="text-secondary text-sm mt-sm">
             Configura los datos de tu local y activa suscripciones manualmente.
@@ -243,20 +316,69 @@ export default function AdminGimnasioPanel() {
                       required
                       className="input"
                       value={gymForm.precioCuota}
-                      onChange={e => setGymForm({...gymForm, precioCuota: e.target.value})}
+                      onChange={e => setGymForm({...gymForm, precioCuota: parseFloat(e.target.value) || 0})}
                     />
                   </div>
                   <div style={{ flex: 1 }} />
                 </div>
 
-                <div className="mt-sm">
-                  <button type="submit" className="btn-primary btn-full w-full">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block' }}>
+                <div className="form-group">
+                  <label>Días Abierto</label>
+                  <div className="flex gap-sm" style={{ flexWrap: 'wrap', marginTop: 6 }}>
+                    {[
+                      { val: 'MONDAY', label: 'Lun' },
+                      { val: 'TUESDAY', label: 'Mar' },
+                      { val: 'WEDNESDAY', label: 'Mié' },
+                      { val: 'THURSDAY', label: 'Jue' },
+                      { val: 'FRIDAY', label: 'Vie' },
+                      { val: 'SATURDAY', label: 'Sáb' },
+                      { val: 'SUNDAY', label: 'Dom' },
+                    ].map(({ val, label }) => {
+                      const active = gymForm.diasAbierto.includes(val);
+                      return (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => {
+                            const dias = active
+                              ? gymForm.diasAbierto.filter(d => d !== val)
+                              : [...gymForm.diasAbierto, val];
+                            setGymForm({ ...gymForm, diasAbierto: dias });
+                          }}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: 'var(--radius-sm)',
+                            border: '1px solid',
+                            borderColor: active ? 'var(--accent)' : 'var(--border)',
+                            background: active ? 'var(--accent-glow)' : 'var(--bg-tertiary)',
+                            color: active ? 'var(--accent)' : 'var(--text-secondary)',
+                            fontWeight: active ? 700 : 400,
+                            cursor: 'pointer',
+                            fontSize: '0.85rem',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="mt-sm flex gap-sm">
+                  <button type="submit" className="btn-primary" style={{ flex: 1, padding: '14px', borderRadius: 'var(--radius-md)' }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', marginRight: 8 }}>
                       <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
                       <polyline points="17 21 17 13 7 13 7 21"/>
                       <polyline points="7 3 7 8 15 8"/>
                     </svg>
-                    Guardar Cambios
+                    Guardar
+                  </button>
+                  <button type="button" className="btn-danger" onClick={handleDeleteGym} style={{ flex: 1, padding: '14px', borderRadius: 'var(--radius-md)', background: 'rgba(220, 38, 38, 0.1)', color: 'var(--danger)', border: '1px solid rgba(220, 38, 38, 0.2)' }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', marginRight: 8 }}>
+                      <polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    Eliminar Gimnasio
                   </button>
                 </div>
               </form>
@@ -352,6 +474,72 @@ export default function AdminGimnasioPanel() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── Miembros ─────────────────────────────── */}
+      {!loading && miGimnasio && (
+        <div className="card p-xl animate-fade-in-up">
+          <div className="flex items-center gap-md mb-lg">
+            <div className="flex-center" style={{ width: 44, height: 44, borderRadius: 'var(--radius-md)', background: 'rgba(139, 92, 246, 0.12)' }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block' }}>
+                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold">Miembros del Gimnasio</h3>
+              <p className="text-secondary text-sm">{miembros.length} usuario{miembros.length !== 1 ? 's' : ''} inscripto{miembros.length !== 1 ? 's' : ''}</p>
+            </div>
+          </div>
+
+          {miembros.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '32px 24px' }}>
+              <p className="text-secondary text-sm">Aún no hay usuarios inscriptos en este gimnasio.</p>
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table className="data-table" style={{ minWidth: 560 }}>
+                <thead>
+                  <tr>
+                    <th>Usuario</th>
+                    <th>Email</th>
+                    <th>Rol</th>
+                    <th>Peso</th>
+                    <th>Altura</th>
+                    <th>Racha actual</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {miembros.map((m) => (
+                    <tr key={m.id}>
+                      <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{m.username}</td>
+                      <td>{m.email}</td>
+                      <td>
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          padding: '2px 10px',
+                          fontSize: '0.7rem',
+                          fontWeight: 700,
+                          borderRadius: 9999,
+                          background: 'rgba(139, 92, 246, 0.12)',
+                          color: 'var(--accent)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em'
+                        }}>{m.rol}</span>
+                      </td>
+                      <td>{m.peso ? `${m.peso} kg` : '—'}</td>
+                      <td>{m.altura ? `${m.altura} m` : '—'}</td>
+                      <td style={{ color: 'var(--warning)', fontWeight: 600 }}>
+                        {m.rachaActualDias ? `${m.rachaActualDias}d` : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 

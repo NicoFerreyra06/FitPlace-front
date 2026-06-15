@@ -10,6 +10,11 @@ export const getMyRoutines = async () => {
   return res.data;
 };
 
+export const getAllRoutines = async (page = 0, size = 50) => {
+  const res = await api.get(`/rutinas?page=${page}&size=${size}`);
+  return res.data;
+};
+
 export const createRutina = async (rutinaData) => {
   const res = await api.post('/rutinas', rutinaData);
   return res.data;
@@ -26,6 +31,11 @@ export const deleteRutina = async (id) => {
 
 export const activarRutina = async (id) => {
   const res = await api.put(`/usuarios/me/rutina-activa/${id}`);
+  return res.data;
+};
+
+export const asignarRutinaAAlumno = async (alumnoId, rutinaId) => {
+  const res = await api.put(`/usuarios/${alumnoId}/rutina-activa/${rutinaId}`);
   return res.data;
 };
 

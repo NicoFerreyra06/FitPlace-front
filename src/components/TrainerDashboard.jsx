@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getAlumnos } from '../services/socialService';
 import { getRecordsPersonales, getHistorialEntrenamientos } from '../services/progressService';
+import { getMyRoutines, asignarRutinaAAlumno } from '../services/routineService';
 
 export default function TrainerDashboard() {
   const { user } = useAuth();
@@ -14,11 +15,31 @@ export default function TrainerDashboard() {
   const [logs, setLogs] = useState([]);
   const [loadingStats, setLoadingStats] = useState(false);
 
+  const [myRoutines, setMyRoutines] = useState([]);
+  const [selectedRoutineToAssign, setSelectedRoutineToAssign] = useState('');
+  const [assigning, setAssigning] = useState(false);
+  const [toast, setToast] = useState('');
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(''), 3000);
+  };
+
   useEffect(() => {
     if (user?.rol === 'ENTRENADOR') {
       loadAlumnos();
+      loadRoutines();
     }
   }, [user]);
+
+  const loadRoutines = async () => {
+    try {
+      const data = await getMyRoutines();
+      setMyRoutines(data || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const loadAlumnos = async () => {
     setLoading(true);
@@ -48,6 +69,20 @@ export default function TrainerDashboard() {
       setLogs([]);
     } finally {
       setLoadingStats(false);
+    }
+  };
+
+  const handleAssignRoutine = async () => {
+    if (!selectedRoutineToAssign || !selectedAlumno) return;
+    setAssigning(true);
+    try {
+      await asignarRutinaAAlumno(selectedAlumno.id, selectedRoutineToAssign);
+      showToast(`¡Rutina asignada exitosamente a ${selectedAlumno.username}!`);
+      setSelectedRoutineToAssign('');
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Error al asignar la rutina.');
+    } finally {
+      setAssigning(false);
     }
   };
 
@@ -229,6 +264,42 @@ export default function TrainerDashboard() {
             </div>
           ) : (
             <>
+              {/* ── Assign Routine Section ────────── */}
+              <div className="card p-lg animate-fade-in-up" style={{
+                background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(1, 105, 255, 0.05))',
+                borderColor: 'rgba(139, 92, 246, 0.2)'
+              }}>
+                <h3 className="font-bold mb-sm text-lg flex items-center gap-xs text-accent">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block' }}>
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                  </svg>
+                  Asignar Rutina a {selectedAlumno.username}
+                </h3>
+                <div className="flex gap-md" style={{ alignItems: 'flex-end' }}>
+                  <div className="form-group" style={{ flex: 1, margin: 0 }}>
+                    <label>Elegí una de tus rutinas</label>
+                    <select
+                      className="input"
+                      value={selectedRoutineToAssign}
+                      onChange={(e) => setSelectedRoutineToAssign(e.target.value)}
+                    >
+                      <option value="">-- Seleccionar Rutina --</option>
+                      {myRoutines.map(r => (
+                        <option key={r.id} value={r.id}>{r.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <button 
+                    className="btn btn-primary" 
+                    onClick={handleAssignRoutine}
+                    disabled={!selectedRoutineToAssign || assigning}
+                    style={{ height: '45px' }}
+                  >
+                    {assigning ? 'Asignando...' : 'Asignar'}
+                  </button>
+                </div>
+              </div>
+
               {/* ── Stats Row ──────────────────── */}
               <div className="animate-scale-in" style={{
                 display: 'grid',
@@ -469,6 +540,13 @@ export default function TrainerDashboard() {
           )}
         </div>
       </div>
+
+      {toast && (
+        <div className="toast toast-success animate-fade-in-up" style={{ zIndex: 9999 }}>
+          <div className="toast-success-dot"></div>
+          <span className="text-sm font-medium">{toast}</span>
+        </div>
+      )}
     </div>
   );
 }

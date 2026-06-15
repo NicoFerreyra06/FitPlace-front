@@ -129,7 +129,7 @@ export default function GymFinder() {
               </div>
             </div>
 
-            <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
+            <div className="flex gap-sm" style={{ flexWrap: 'wrap', marginLeft: 'auto' }}>
               <button className="btn btn-ghost text-danger" onClick={() => handleCancel(currentSub.id)}>
                 Cancelar
               </button>
@@ -149,14 +149,37 @@ export default function GymFinder() {
 
       {/* Suscripción Activa */}
       {!subLoading && currentSub && currentSub.estadoSuscripcion === 'ACTIVA' && (
-        <div className="alert alert-success animate-fade-in-up">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          <div>
-            <h4 className="font-bold">Suscripción Activa</h4>
-            <p className="text-sm">Actualmente eres miembro de <strong>{currentSub.gimnasio?.nombre || 'tu gimnasio'}</strong>.</p>
+        <div className="card-glow p-lg animate-fade-in-up">
+          <div className="flex items-center gap-md" style={{ flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: '240px' }}>
+              <div className="flex items-center gap-sm mb-sm">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                <h3 className="font-bold" style={{ color: 'var(--success)' }}>Suscripción Activa</h3>
+              </div>
+              <p className="text-sm text-secondary">
+                Eres miembro de <strong className="text-primary">{currentSub.gimnasio?.nombre || 'tu gimnasio'}</strong>.
+              </p>
+            </div>
+            <button
+              className="btn btn-danger"
+              onClick={() => {
+                  cancelarSuscripcion(currentSub.id)
+                    .then(() => { showToast('Te desvinculaste del gimnasio.'); loadData(); })
+                    .catch((err) => {
+                      console.error('Error desvinculando:', err);
+                      const data = err.response?.data;
+                      const msg = data?.message || (typeof data === 'string' ? data : null) || 'Error al desvincular la suscripción.';
+                      showToast(msg);
+                    });
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Desvincularme
+            </button>
           </div>
         </div>
       )}
+
 
       {/* Gym Grid */}
       {loading ? (
