@@ -10,6 +10,7 @@ export default function AdminGimnasioPanel() {
   const [miembros, setMiembros] = useState([]);
   const [toast, setToast] = useState('');
   const [subIdInput, setSubIdInput] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
   // Forms
   const [gymForm, setGymForm] = useState({ nombre: '', direccion: '', horarioApertura: '08:00', horarioCierre: '22:00', diasAbierto: [], precioCuota: 0 });
@@ -101,8 +102,11 @@ export default function AdminGimnasioPanel() {
     }
   };
 
-  const handleDeleteGym = async () => {
-    if (!window.confirm('¿Estás seguro que querés eliminar este gimnasio? Esta acción no se puede deshacer.')) return;
+  const handleDeleteGym = () => {
+    setConfirmDeleteId(miGimnasio.id);
+  };
+
+  const executeDelete = async () => {
     try {
       await deleteGimnasio(miGimnasio.id);
       showToast('Gimnasio eliminado correctamente');
@@ -117,6 +121,8 @@ export default function AdminGimnasioPanel() {
       console.error('Error al eliminar gimnasio:', err);
       const data = err.response?.data;
       showToast(data?.message || (typeof data === 'string' ? data : null) || 'Error al eliminar el gimnasio');
+    } finally {
+      setConfirmDeleteId(null);
     }
   };
 
@@ -168,6 +174,20 @@ export default function AdminGimnasioPanel() {
           </p>
         </div>
       </div>
+
+      {/* Confirm Modal */}
+      {confirmDeleteId && (
+        <div className="modal-overlay animate-fade-in">
+          <div className="modal-content animate-scale-in">
+            <h3 className="text-xl font-bold text-danger">Eliminar Gimnasio</h3>
+            <p className="text-secondary">¿Estás seguro que querés eliminar este gimnasio? Esta acción no se puede deshacer y borrará todos los datos asociados.</p>
+            <div className="flex gap-sm justify-end mt-sm">
+              <button className="btn btn-secondary" onClick={() => setConfirmDeleteId(null)}>Volver</button>
+              <button className="btn btn-danger" onClick={executeDelete}>Sí, eliminar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Loading skeleton ────────────────────── */}
       {loading ? (

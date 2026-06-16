@@ -7,9 +7,15 @@ export default function TrainingLog() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
   const [success, setSuccess] = useState(false);
+  const [toast, setToast] = useState({ msg: '', isError: false });
   
   // Array of { pesoLevantado, repeticionesLogradas, ejercicioRutinaId }
   const [marcas, setMarcas] = useState([]);
+
+  const showToast = (msg, isError = false) => {
+    setToast({ msg, isError });
+    setTimeout(() => setToast({ msg: '', isError: false }), 4000);
+  };
 
   useEffect(() => {
     loadRoutine();
@@ -60,13 +66,13 @@ export default function TrainingLog() {
     })).filter(m => m.pesoLevantado > 0 && m.repeticionesLogradas > 0);
 
     if (cleanMarcas.length === 0) {
-      alert('Debes registrar al menos un ejercicio con peso y repeticiones mayores a 0.');
+      showToast('Debes registrar al menos un ejercicio con peso y repeticiones mayores a 0.', true);
       return;
     }
 
     const activeRoutineId = localStorage.getItem('activeRoutineId');
     if (!activeRoutineId) {
-      alert('No se pudo identificar la rutina activa. Por favor, ve a "Mis Rutinas" y vuelve a darle al botón "Activar".');
+      showToast('No se pudo identificar la rutina activa. Ve a "Mis Rutinas" y actívala de nuevo.', true);
       return;
     }
 
@@ -84,7 +90,7 @@ export default function TrainingLog() {
       }));
       setMarcas(initialMarcas);
     } catch (err) {
-      alert('Error al guardar el entrenamiento');
+      showToast('Error al guardar el entrenamiento', true);
       console.error(err);
     }
   };
@@ -161,6 +167,14 @@ export default function TrainingLog() {
           </button>
         </div>
       </form>
+
+      {/* Toast Notification */}
+      {toast.msg && (
+        <div className={`toast animate-fade-in-up ${toast.isError ? 'toast-danger' : 'toast-success'}`} style={{ zIndex: 9999 }}>
+          <div className={toast.isError ? 'toast-danger-dot' : 'toast-success-dot'}></div>
+          <span className="text-sm font-medium">{toast.msg}</span>
+        </div>
+      )}
     </div>
   );
 }

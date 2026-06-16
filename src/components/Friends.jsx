@@ -4,9 +4,6 @@ import {
   getAmigos, 
   agregarAmigo, 
   eliminarAmigo, 
-  getMiEntrenador, 
-  asignarEntrenador, 
-  eliminarEntrenador,
   getPerfilAmigo
 } from '../services/socialService';
 
@@ -34,14 +31,8 @@ export default function Friends() {
   const [selectedAmigoProfile, setSelectedAmigoProfile] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
 
-  // Entrenador state
-  const [entrenador, setEntrenador] = useState(null);
-  const [entrenadorIdInput, setEntrenadorIdInput] = useState('');
-  const [loadingEntrenador, setLoadingEntrenador] = useState(true);
-
   useEffect(() => {
     if (activeTab === 'amigos') loadAmigos();
-    if (activeTab === 'entrenador') loadEntrenador();
   }, [activeTab]);
 
   const loadAmigos = async () => {
@@ -56,17 +47,7 @@ export default function Friends() {
     }
   };
 
-  const loadEntrenador = async () => {
-    try {
-      setLoadingEntrenador(true);
-      const data = await getMiEntrenador();
-      setEntrenador(data);
-    } catch (err) {
-      setEntrenador(null);
-    } finally {
-      setLoadingEntrenador(false);
-    }
-  };
+
 
   const handleAddAmigo = async (e) => {
     e.preventDefault();
@@ -104,46 +85,10 @@ export default function Friends() {
     }
   };
 
-  const handleAssignTrainer = async (e) => {
-    e.preventDefault();
-    if (!entrenadorIdInput.trim()) return;
-    try {
-      await asignarEntrenador(entrenadorIdInput.trim());
-      setEntrenadorIdInput('');
-      loadEntrenador();
-      alert('Entrenador asignado con éxito');
-    } catch (err) {
-      alert(err.response?.data?.message || 'Error al asignar entrenador');
-    }
-  };
 
-  const handleRemoveTrainer = async () => {
-    if (!confirm('¿Seguro que quieres desvincularte de tu entrenador?')) return;
-    try {
-      await eliminarEntrenador();
-      setEntrenador(null);
-    } catch (err) {
-      alert('Error al desvincular entrenador');
-    }
-  };
 
   return (
     <div className="animate-fade-in flex-col gap-lg max-w-4xl mx-auto">
-      <div className="tabs">
-        <button 
-          className={`tab ${activeTab === 'amigos' ? 'active' : ''}`}
-          onClick={() => setActiveTab('amigos')}
-        >
-          Mis Amigos
-        </button>
-        <button 
-          className={`tab ${activeTab === 'entrenador' ? 'active' : ''}`}
-          onClick={() => setActiveTab('entrenador')}
-        >
-          Mi Entrenador
-        </button>
-      </div>
-
       {activeTab === 'amigos' && (
         <div className="flex-col gap-lg animate-fade-in-up">
           <div className="card p-lg flex-col md:flex-row gap-lg justify-between items-center bg-tertiary border-accent">
@@ -259,49 +204,6 @@ export default function Friends() {
 
 
               </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeTab === 'entrenador' && (
-        <div className="flex-col gap-lg animate-fade-in-up">
-          {loadingEntrenador ? (
-            <div className="animate-pulse h-32 bg-secondary rounded-lg"></div>
-          ) : entrenador ? (
-            <div className="card p-lg flex-col md:flex-row justify-between items-center border-accent card-glow">
-              <div className="flex items-center gap-md mb-md md:mb-0">
-                <div className="friend-avatar" style={{ width: 60, height: 60, fontSize: '1.5rem' }}>
-                  {entrenador.username.substring(0, 2).toUpperCase()}
-                </div>
-                <div>
-                  <h3 className="font-bold text-xl">{entrenador.username}</h3>
-                  <p className="text-secondary">{entrenador.email}</p>
-                  <span className="badge badge-accent mt-sm">ENTRENADOR PERSONAL</span>
-                </div>
-              </div>
-              <button className="btn btn-danger" onClick={handleRemoveTrainer}>
-                Desvincular
-              </button>
-            </div>
-          ) : (
-            <div className="empty-state">
-              <div className="empty-state-icon" style={{ opacity: 0.7 }}>
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg>
-              </div>
-              <h3>No tienes entrenador asignado</h3>
-              <p>Si tienes un entrenador personal en la app, ingresa su ID para vincularlo a tu cuenta y que pueda gestionar tus rutinas.</p>
-              
-              <form onSubmit={handleAssignTrainer} className="flex gap-sm justify-center mt-md max-w-sm mx-auto">
-                <input 
-                  type="number" 
-                  className="input text-center" 
-                  placeholder="ID del Entrenador"
-                  value={entrenadorIdInput}
-                  onChange={e => setEntrenadorIdInput(e.target.value)}
-                />
-                <button type="submit" className="btn btn-primary">Vincular</button>
-              </form>
             </div>
           )}
         </div>

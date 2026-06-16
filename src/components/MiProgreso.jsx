@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getRecordsPersonales, getHistorialEntrenamientos, getEvolucionEjercicio } from '../services/progressService';
 import { getAllEjercicios } from '../services/ejercicioService';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const TrophyIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -157,23 +158,37 @@ export default function MiProgreso() {
             <span className="text-secondary">No hay datos suficientes para mostrar un gráfico.</span>
           </div>
         ) : (
-          <div className="chart-container">
-            {chartData.map((data, index) => {
-              // Calculate height percentage (min 10% so it's always visible)
-              const heightPct = maxChartWeight > 0 ? Math.max((data.pesoMaximo / maxChartWeight) * 100, 10) : 10;
-              
-              return (
-                <div key={index} className="chart-bar-group">
-                  <div className="chart-tooltip">
-                    {data.pesoMaximo} kg
-                  </div>
-                  <div className="chart-bar" style={{ height: `${heightPct}%`, animationDelay: `${index * 50}ms` }}></div>
-                  <span className="chart-label">
-                    {new Date(data.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
-                  </span>
-                </div>
-              );
-            })}
+          <div style={{ width: '100%', height: 300, marginTop: '20px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorPeso" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.5}/>
+                    <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <XAxis 
+                  dataKey="fecha" 
+                  tickFormatter={(val) => new Date(val).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })} 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} 
+                  dy={10}
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
+                />
+                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text-primary)' }}
+                  itemStyle={{ color: 'var(--accent)', fontWeight: 'bold' }}
+                  labelFormatter={(val) => new Date(val).toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: 'long', year: 'numeric' })}
+                />
+                <Area type="monotone" dataKey="pesoMaximo" name="Peso (kg)" stroke="var(--accent)" strokeWidth={3} fillOpacity={1} fill="url(#colorPeso)" activeDot={{ r: 6, fill: 'var(--accent)', stroke: 'var(--bg-primary)', strokeWidth: 2 }} />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         )}
       </div>

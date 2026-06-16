@@ -2,16 +2,15 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import UserProfile from '../components/UserProfile';
 import TodayRoutine from '../components/TodayRoutine';
-import MyRoutines from '../components/MyRoutines';
-import CreateRoutine from '../components/CreateRoutine';
-import TrainingLog from '../components/TrainingLog';
-import Friends from '../components/Friends';
-import GymFinder from '../components/GymFinder';
 import AdminPanel from '../components/AdminPanel';
 import AdminGimnasioPanel from '../components/AdminGimnasioPanel';
 import TrainerDashboard from '../components/TrainerDashboard';
-import MiProgreso from '../components/MiProgreso';
-import DiscoverRoutines from '../components/DiscoverRoutines';
+import TrainerCatalog from '../components/TrainerCatalog';
+
+// Hubs
+import CommunityHub from '../components/CommunityHub';
+import ProgressHub from '../components/ProgressHub';
+import RoutinesHub from '../components/RoutinesHub';
 
 // Sidebar icons as inline SVGs for zero dependencies
 const icons = {
@@ -20,14 +19,15 @@ const icons = {
       <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
     </svg>
   ),
+  dumbbell: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="7" y1="12" x2="17" y2="12" />
+      <path d="M7 6v12M17 6v12M4 8v8M20 8v8" />
+    </svg>
+  ),
   user: (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
-    </svg>
-  ),
-  dumbbell: (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M6.5 6.5h11M6.5 17.5h11M3 10V7a1 1 0 011-1h1a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1v-3M21 10V7a1 1 0 00-1-1h-1a1 1 0 00-1 1v10a1 1 0 001 1h1a1 1 0 001-1v-3M9 6v12M15 6v12"/>
     </svg>
   ),
   calendar: (
@@ -35,14 +35,14 @@ const icons = {
       <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
     </svg>
   ),
-  activity: (
+  history: (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
     </svg>
   ),
-  users: (
+  globe: (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
+      <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
     </svg>
   ),
   building: (
@@ -60,34 +60,21 @@ const icons = {
       <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
     </svg>
   ),
-  plus: (
+  award: (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      <circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
     </svg>
-  ),
-  history: (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-    </svg>
-  ),
-  search: (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-    </svg>
-  ),
+  )
 };
 
 function getTabsForRole(rol) {
   const base = [
-    { id: 'rutina', label: 'Hoy', icon: icons.home },
-    { id: 'perfil', label: 'Perfil', icon: icons.user },
-    { id: 'misRutinas', label: 'Rutinas', icon: icons.calendar },
-    { id: 'crearRutina', label: 'Crear', icon: icons.plus },
-    { id: 'descubrir', label: 'Descubrir', icon: icons.search },
-    { id: 'entrenamiento', label: 'Registro', icon: icons.activity },
-    { id: 'progreso', label: 'Mi Progreso', icon: icons.history },
-    { id: 'amigos', label: 'Social', icon: icons.users },
-    { id: 'gimnasio', label: 'Gimnasio', icon: icons.building },
+    { id: 'perfil', label: 'Mi Perfil', icon: icons.user },
+    { id: 'rutina', label: 'Hoy', icon: icons.dumbbell },
+    { id: 'rutinasHub', label: 'Rutinas', icon: icons.calendar },
+    { id: 'progresoHub', label: 'Progreso', icon: icons.history },
+    { id: 'comunidadHub', label: 'Comunidad', icon: icons.globe },
+    { id: 'entrenadores', label: 'Entrenadores', icon: icons.award },
   ];
 
   if (rol === 'ENTRENADOR') {
@@ -119,8 +106,7 @@ function getTabsForRole(rol) {
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState('rutina');
-  const [editingRoutine, setEditingRoutine] = useState(null);
+  const [activeTab, setActiveTab] = useState('perfil');
 
   if (!user) return null;
 
@@ -132,26 +118,35 @@ export default function Dashboard() {
         return <TodayRoutine onNavigate={setActiveTab} />;
       case 'perfil':
         return <UserProfile />;
-      case 'misRutinas':
-        return <MyRoutines onNavigate={setActiveTab} onEdit={(r) => { setEditingRoutine(r); setActiveTab('crearRutina'); }} />;
-      case 'crearRutina':
-        return <CreateRoutine onNavigate={setActiveTab} editingRoutine={editingRoutine} setEditingRoutine={setEditingRoutine} />;
-      case 'entrenamiento':
-        return <TrainingLog />;
-      case 'descubrir':
-        return <DiscoverRoutines onNavigate={setActiveTab} />;
-      case 'progreso':
-        return <MiProgreso />;
-      case 'amigos':
-        return <Friends />;
-      case 'gimnasio':
-        return <GymFinder />;
+      case 'rutinasHub':
+        return <RoutinesHub onNavigate={setActiveTab} />;
+      case 'progresoHub':
+        return <ProgressHub />;
+      case 'comunidadHub':
+        return <CommunityHub onNavigate={setActiveTab} />;
+      case 'entrenadores':
+        return <TrainerCatalog onNavigate={setActiveTab} />;
       case 'admin':
         return <AdminPanel />;
       case 'adminGimnasio':
         return <AdminGimnasioPanel />;
       case 'trainer':
         return <TrainerDashboard />;
+      // Fallbacks para navegación legacy desde otros componentes
+      case 'crearRutina':
+      case 'misRutinas':
+        setActiveTab('rutinasHub');
+        return null;
+      case 'descubrir':
+      case 'rankings':
+      case 'amigos':
+      case 'gimnasio':
+        setActiveTab('comunidadHub');
+        return null;
+      case 'entrenamiento':
+      case 'progreso':
+        setActiveTab('progresoHub');
+        return null;
       default:
         return <TodayRoutine onNavigate={setActiveTab} />;
     }
@@ -203,8 +198,10 @@ export default function Dashboard() {
               {activeTab === 'descubrir' && 'Descubrir Rutinas'}
               {activeTab === 'entrenamiento' && 'Registrar Entrenamiento'}
               {activeTab === 'progreso' && 'Progreso y Estadísticas'}
+              {activeTab === 'comunidadHub' && 'Comunidad'}
               {activeTab === 'amigos' && 'Comunidad'}
               {activeTab === 'gimnasio' && 'Gimnasios'}
+              {activeTab === 'entrenadores' && 'Catálogo de Entrenadores'}
               {activeTab === 'admin' && 'Panel de Administración'}
               {activeTab === 'adminGimnasio' && 'Mi Gimnasio'}
               {activeTab === 'trainer' && 'Mis Alumnos'}

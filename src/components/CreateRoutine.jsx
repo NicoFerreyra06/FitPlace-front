@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getAllEjercicios } from '../services/ejercicioService';
-import { createRutina, activarRutina } from '../services/routineService';
+import { createRutina, updateRutina, activarRutina } from '../services/routineService';
 import { useAuth } from '../context/AuthContext';
 
 const DAYS_OF_WEEK = [
@@ -22,6 +22,7 @@ export default function CreateRoutine({ onNavigate, editingRoutine, setEditingRo
   const [dias, setDias] = useState([]); 
   
   const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState({ text: '', type: '' });
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -50,11 +51,7 @@ export default function CreateRoutine({ onNavigate, editingRoutine, setEditingRo
       setPrecio('');
       setDias([]);
     }
-
-    return () => {
-      if (setEditingRoutine) setEditingRoutine(null);
-    };
-  }, [editingRoutine, setEditingRoutine]);
+  }, [editingRoutine]);
 
   const handleAddDay = () => {
     setDias(prev => [...prev, { tempId: generateId(), diaDeLaSemana: 'MONDAY', ejercicios: [] }]);
@@ -103,7 +100,11 @@ export default function CreateRoutine({ onNavigate, editingRoutine, setEditingRo
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!nombre) return alert('El nombre es obligatorio');
+    setMsg({ text: '', type: '' });
+    if (!nombre) {
+      setMsg({ text: 'El nombre es obligatorio', type: 'error' });
+      return;
+    }
     
     // Agrupar ejercicios por día para evitar duplicados en backend
     const diasAgrupados = {};
@@ -138,17 +139,19 @@ export default function CreateRoutine({ onNavigate, editingRoutine, setEditingRo
     try {
       if (editingRoutine) {
         await updateRutina(editingRoutine.id, payload);
-        alert('Rutina actualizada correctamente');
+        setMsg({ text: 'Rutina actualizada correctamente', type: 'success' });
       } else {
         const created = await createRutina(payload);
         await activarRutina(created.id);
         localStorage.setItem('activeRoutineId', created.id.toString());
         await refreshUser();
-        alert('Rutina creada y activada correctamente');
+        setMsg({ text: 'Rutina creada y activada correctamente', type: 'success' });
       }
-      onNavigate('misRutinas');
+      if (setEditingRoutine) setEditingRoutine(null);
+      setTimeout(() => onNavigate('misRutinas'), 1500);
     } catch (err) {
-      alert(editingRoutine ? 'Error al actualizar rutina' : 'Error al crear rutina');
+      const backendMsg = err.response?.data?.message || err.response?.data || (editingRoutine ? 'Error al actualizar rutina' : 'Error al crear rutina');
+      setMsg({ text: typeof backendMsg === 'string' ? backendMsg : 'Error inesperado', type: 'error' });
       console.error(err);
     } finally {
       setLoading(false);
@@ -156,13 +159,19 @@ export default function CreateRoutine({ onNavigate, editingRoutine, setEditingRo
   };
 
   return (
-    <div className="animate-fade-in flex-col gap-lg max-w-3xl mx-auto">
-      <div className="section-header">
+    <div className="animate-fade-in flex-col gap-lg pb-xl">
+      <div className="flex-between flex-wrap gap-md">
         <h2 className="section-title">{editingRoutine ? 'Editar Rutina' : 'Diseñador de Rutina'}</h2>
         <button className="btn btn-secondary" onClick={() => onNavigate('misRutinas')}>
           Volver
         </button>
       </div>
+
+      {msg.text && (
+        <div className={`alert alert-${msg.type} animate-scale-in`} style={{ marginBottom: '1rem' }}>
+          {msg.text}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="flex-col gap-lg">
         <div className="card p-lg flex-col gap-md">

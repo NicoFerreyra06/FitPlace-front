@@ -50,7 +50,7 @@ export const getUsuarios = async (page = 0) => {
 };
 
 export const cambiarRol = async (userId, nuevoRol) => {
-  const res = await api.put(`/usuarios/${userId}/rol?rol=${nuevoRol}`);
+  const res = await api.put(`/usuarios/${userId}/rol?nuevoRol=${nuevoRol}`);
   return res.data;
 };
 

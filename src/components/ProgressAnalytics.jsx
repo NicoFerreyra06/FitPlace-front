@@ -87,28 +87,32 @@ export default function ProgressAnalytics() {
 
   if (loading) {
     return (
-      <div className="bg-dark-bg p-8 rounded-2xl border border-dark-border flex flex-col items-center justify-center animate-pulse h-80">
-        <Activity className="w-10 h-10 text-neon-blue mb-4 animate-spin" />
-        <p className="text-slate-400">Procesando métricas...</p>
+      <div className="card p-xl flex-center flex-col animate-pulse" style={{ height: '320px' }}>
+        <Activity className="w-10 h-10 text-accent mb-sm animate-spin" style={{ opacity: 0.7 }} />
+        <p className="text-secondary">Procesando métricas...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-dark-bg p-8 rounded-2xl border border-red-500/30 flex flex-col items-center justify-center h-80">
-        <AlertCircle className="w-10 h-10 text-red-400 mb-4" />
-        <p className="text-slate-400">{error}</p>
+      <div className="card p-xl flex-center flex-col" style={{ height: '320px', borderColor: 'rgba(255, 71, 87, 0.3)' }}>
+        <AlertCircle className="w-10 h-10 text-danger mb-sm" />
+        <p className="text-secondary">{error}</p>
       </div>
     );
   }
 
   if (availableExercises.length === 0 || chartData.length === 0) {
     return (
-      <div className="bg-dark-bg p-8 rounded-2xl border border-dark-border flex flex-col items-center justify-center h-80 text-center">
-        <TrendingUp className="w-12 h-12 text-slate-600 mb-4" />
-        <h3 className="text-xl font-medium text-slate-300">Sin Datos Suficientes</h3>
-        <p className="text-slate-500 mt-2 max-w-md">Registra más entrenamientos para desbloquear las analíticas de progreso y ver tus curvas de fuerza.</p>
+      <div className="empty-state animate-scale-in" style={{ height: '320px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <div className="empty-state-icon flex-center mx-auto mb-md" style={{ opacity: 0.5 }}>
+          <TrendingUp className="w-12 h-12" />
+        </div>
+        <h3 className="text-xl font-bold">Sin Datos Suficientes</h3>
+        <p className="text-secondary mt-xs max-w-md mx-auto">
+          Registra más entrenamientos para desbloquear las analíticas de progreso y ver tus curvas de fuerza.
+        </p>
       </div>
     );
   }
@@ -117,19 +121,20 @@ export default function ProgressAnalytics() {
   const filteredChartData = chartData.filter(d => d[selectedExercise] !== undefined);
 
   return (
-    <div className="bg-gradient-to-b from-dark-card to-dark-bg p-6 rounded-2xl border border-dark-border shadow-xl">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+    <div className="card-glow p-xl animate-fade-in-up" style={{ minHeight: '400px' }}>
+      <div className="flex-between items-center mb-lg" style={{ flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h2 className="text-xl font-bold flex items-center gap-2 text-slate-100">
-            <TrendingUp className="text-neon-blue" /> Analíticas de Progreso
+          <h2 className="text-2xl font-bold flex items-center gap-sm">
+            <TrendingUp className="text-accent" /> Analíticas de Progreso
           </h2>
-          <p className="text-sm text-slate-400 mt-1">Evolución de peso máximo (kg)</p>
+          <p className="text-secondary text-sm mt-xs">Evolución de peso máximo (kg)</p>
         </div>
         
         <select 
           value={selectedExercise}
           onChange={(e) => setSelectedExercise(e.target.value)}
-          className="bg-dark-bg border border-dark-border rounded-lg p-2.5 text-slate-200 focus:border-neon-blue outline-none min-w-[200px]"
+          className="input"
+          style={{ width: 'auto', minWidth: '220px', maxWidth: '100%' }}
         >
           {availableExercises.map(ex => (
             <option key={ex} value={ex}>{ex}</option>
@@ -138,45 +143,45 @@ export default function ProgressAnalytics() {
       </div>
 
       {filteredChartData.length < 1 ? (
-        <div className="h-64 flex flex-col items-center justify-center text-center">
-          <Activity className="w-10 h-10 text-slate-600 mb-3" />
-          <p className="text-slate-400">No hay datos registrados para {selectedExercise}.</p>
+        <div className="empty-state animate-fade-in" style={{ height: '280px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <Activity className="w-10 h-10 mx-auto mb-sm" style={{ opacity: 0.5 }} />
+          <p className="text-secondary">No hay datos registrados para {selectedExercise}.</p>
         </div>
       ) : (
-        <div className="h-72 w-full">
+        <div style={{ height: '300px', width: '100%', marginTop: '16px' }}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={filteredChartData} margin={{ top: 5, right: 20, bottom: 5, left: -20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
               <XAxis 
                 dataKey="fecha" 
-                stroke="#64748b" 
-                tick={{fill: '#94a3b8', fontSize: 12}}
-                tickMargin={10}
+                stroke="var(--text-muted)" 
+                tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
+                tickMargin={12}
               />
               <YAxis 
-                stroke="#64748b" 
-                tick={{fill: '#94a3b8', fontSize: 12}}
+                stroke="var(--text-muted)" 
+                tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
                 domain={['auto', 'auto']}
               />
               <Tooltip 
                 contentStyle={{ 
-                  backgroundColor: '#0f172a', 
-                  border: '1px solid #1e293b',
-                  borderRadius: '0.5rem',
-                  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.5)'
+                  backgroundColor: 'var(--bg-secondary)', 
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-md)',
+                  boxShadow: '0 8px 30px rgba(0, 0, 0, 0.5)'
                 }}
-                itemStyle={{ color: '#0169ff', fontWeight: 'bold' }}
-                labelStyle={{ color: '#94a3b8', marginBottom: '4px' }}
+                itemStyle={{ color: 'var(--accent)', fontWeight: 'bold' }}
+                labelStyle={{ color: 'var(--text-secondary)', marginBottom: '4px' }}
               />
               <Line 
                 type="monotone" 
                 dataKey={selectedExercise} 
                 name="Peso Máximo (kg)"
-                stroke="#0169ff" 
+                stroke="var(--accent)" 
                 strokeWidth={3}
-                dot={{ r: 4, fill: '#0169ff', strokeWidth: 2, stroke: '#0f172a' }}
-                activeDot={{ r: 6, fill: '#0169ff', stroke: '#fff' }}
-                animationDuration={1500}
+                dot={{ r: 4, fill: 'var(--accent)', strokeWidth: 2, stroke: 'var(--bg-primary)' }}
+                activeDot={{ r: 6, fill: 'var(--accent)', stroke: '#fff', strokeWidth: 0 }}
+                animationDuration={1200}
               />
             </LineChart>
           </ResponsiveContainer>

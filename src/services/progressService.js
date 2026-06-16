@@ -14,3 +14,8 @@ export const getEvolucionEjercicio = async (usuarioId, ejercicioId) => {
   const res = await api.get(`/entrenamientos/usuario/${usuarioId}/ejercicio/${ejercicioId}`);
   return res.data;
 };
+
+export const getRankingPorEjercicio = async (ejercicioId, page = 0, size = 10) => {
+  const res = await api.get(`/records/ranking/${ejercicioId}?page=${page}&size=${size}`);
+  return res.data;
+};

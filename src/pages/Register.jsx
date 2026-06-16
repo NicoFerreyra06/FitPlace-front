@@ -48,9 +48,7 @@ export default function Register() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-dark-bg">
-      <div className="absolute top-1/4 right-1/4 w-1/2 h-1/2 bg-neon-blue/10 blur-[120px] rounded-full pointer-events-none" />
-      
-      <div className="w-full max-w-lg bg-dark-card/80 backdrop-blur-xl border border-dark-border p-8 rounded-3xl shadow-2xl z-10 my-8">
+      <div className="w-full max-w-lg bg-dark-card border border-dark-border p-8 rounded-3xl shadow-2xl z-10 my-8">
         <div className="flex flex-col items-center mb-8">
           <img src="/logo.png" alt="FitPlace Logo" className="h-20 w-auto object-contain mb-4 drop-shadow-[0_0_20px_rgba(29,78,216,0.4)]" />
           <h1 className="text-3xl font-bold tracking-tight text-slate-100">Crea tu Cuenta</h1>

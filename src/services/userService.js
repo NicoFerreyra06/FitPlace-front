@@ -56,3 +56,8 @@ export const getUsuarios = async (page = 0, size = 20) => {
   const response = await api.get(`/usuarios?page=${page}&size=${size}`);
   return response.data;
 };
+
+export const getEntrenadores = async () => {
+  const response = await api.get('/usuarios/entrenadores');
+  return response.data;
+};

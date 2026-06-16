@@ -23,6 +23,13 @@ export default function MyRoutines({ onNavigate, onEdit }) {
     return localStorage.getItem('activeRoutineId');
   });
 
+  const [toast, setToast] = useState('');
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(''), 3000);
+  };
+
   useEffect(() => {
     loadRoutines();
   }, []);
@@ -44,8 +51,9 @@ export default function MyRoutines({ onNavigate, onEdit }) {
       await activarRutina(id);
       localStorage.setItem('activeRoutineId', id.toString());
       setActiveRoutineId(id.toString());
+      showToast('Rutina activada con éxito');
     } catch (err) {
-      alert('Error al activar rutina');
+      showToast('Error al activar rutina');
     }
   };
 
@@ -193,6 +201,13 @@ export default function MyRoutines({ onNavigate, onEdit }) {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className="toast toast-success animate-fade-in-up" style={{ zIndex: 9999 }}>
+          <div className="toast-success-dot"></div>
+          <span className="text-sm font-medium">{toast}</span>
         </div>
       )}
     </div>

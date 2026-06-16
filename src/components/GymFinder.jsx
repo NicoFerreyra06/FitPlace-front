@@ -21,6 +21,7 @@ export default function GymFinder() {
   const [loading, setLoading] = useState(true);
   const [subLoading, setSubLoading] = useState(true);
   const [toast, setToast] = useState('');
+  const [confirmCancelId, setConfirmCancelId] = useState(null);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -54,7 +55,7 @@ export default function GymFinder() {
     }
   };
 
-  const handleSubscribe = async (gymId) => {
+  const handleSubscribe = async (gymId, payOnline) => {
     if (currentSub && currentSub.estadoSuscripcion === 'PENDIENTE') {
       showToast('Ya tienes una suscripción pendiente.');
       return;
@@ -66,7 +67,12 @@ export default function GymFinder() {
 
     try {
       const newSub = await createSuscripcion(gymId);
-      handlePay(newSub.id);
+      if (payOnline) {
+        handlePay(newSub.id);
+      } else {
+        showToast('Solicitud enviada. Esperando aprobación manual.');
+        loadData();
+      }
     } catch (err) {
       showToast(err.response?.data?.message || 'Error al procesar la suscripción.');
     }
@@ -81,14 +87,19 @@ export default function GymFinder() {
     }
   };
 
-  const handleCancel = async (subId) => {
-    if (!confirm('¿Seguro que quieres cancelar esta suscripción pendiente?')) return;
+  const handleCancel = (subId) => {
+    setConfirmCancelId(subId);
+  };
+
+  const executeCancel = async () => {
     try {
-      await cancelarSuscripcion(subId);
+      await cancelarSuscripcion(confirmCancelId);
       showToast('Suscripción cancelada correctamente.');
       loadData();
     } catch (err) {
       showToast('Error al cancelar la suscripción.');
+    } finally {
+      setConfirmCancelId(null);
     }
   };
 
@@ -107,6 +118,20 @@ export default function GymFinder() {
       <div className="section-header">
         <h2 className="section-title">Encuentra tu Gimnasio</h2>
       </div>
+
+      {/* Confirm Modal */}
+      {confirmCancelId && (
+        <div className="modal-overlay animate-fade-in">
+          <div className="modal-content animate-scale-in">
+            <h3 className="text-xl font-bold">Cancelar Solicitud</h3>
+            <p className="text-secondary">¿Seguro que quieres cancelar esta suscripción pendiente?</p>
+            <div className="flex gap-sm justify-end mt-sm">
+              <button className="btn btn-secondary" onClick={() => setConfirmCancelId(null)}>Volver</button>
+              <button className="btn btn-danger" onClick={executeCancel}>Sí, cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Suscripción Pendiente */}
       {!subLoading && currentSub && currentSub.estadoSuscripcion === 'PENDIENTE' && (
@@ -229,19 +254,28 @@ export default function GymFinder() {
                 </div>
               </div>
 
-              <button 
-                className="btn btn-primary w-full mt-md"
-                onClick={() => handleSubscribe(gym.id)}
-                disabled={currentSub && (currentSub.estadoSuscripcion === 'ACTIVA' || currentSub.estadoSuscripcion === 'PENDIENTE')}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                Suscribirse
-              </button>
+              <div className="flex-col gap-sm mt-md">
+                <button 
+                  className="btn btn-primary w-full"
+                  onClick={() => handleSubscribe(gym.id, true)}
+                  disabled={currentSub && (currentSub.estadoSuscripcion === 'ACTIVA' || currentSub.estadoSuscripcion === 'PENDIENTE')}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                  Pagar Automáticamente
+                </button>
+                <button 
+                  className="btn btn-secondary w-full"
+                  onClick={() => handleSubscribe(gym.id, false)}
+                  disabled={currentSub && (currentSub.estadoSuscripcion === 'ACTIVA' || currentSub.estadoSuscripcion === 'PENDIENTE')}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  Solicitud (Efectivo)
+                </button>
+              </div>
             </div>
           ))}
         </div>
       )}
-
       {/* Toast */}
       {toast && (
         <div className="toast toast-success animate-fade-in-up">

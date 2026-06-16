@@ -57,10 +57,10 @@
   --shadow-glow: 0 0 24px var(--accent-glow);
 
   /* Motion */
-  --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition: 400ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* ── Base ──────────────────────────────────── */
+/* ── Base ── */
 html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
@@ -68,10 +68,6 @@ html {
 
 body {
   background-color: var(--bg-primary);
-  background-image: radial-gradient(circle at top left, rgba(55, 71, 244, 0.05), transparent 50%),
-                    radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.03), transparent 50%);
-  background-size: 200% 200%;
-  background-attachment: fixed;
   color: var(--text-primary);
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-weight: 400;
@@ -79,6 +75,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
 }
 
 #root {
@@ -181,27 +179,75 @@ small {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: none;
-  transition: border-color var(--transition);
+  transition: transform var(--transition), border-color var(--transition), box-shadow var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 50% 0%, rgba(55, 71, 244, 0.1), transparent 70%);
+  opacity: 0;
+  transition: opacity var(--transition);
+  pointer-events: none;
+}
+
+.card:hover::before {
+  opacity: 1;
 }
 
 .card:hover {
-  border-color: var(--border-hover);
+  transform: translateY(-2px);
+  border-color: rgba(55, 71, 244, 0.4);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(55, 71, 244, 0.1);
 }
 
 .card-glass {
   background: rgba(13, 17, 23, 0.6);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(33, 38, 45, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
 }
 
 .card-glow {
-  background: var(--bg-secondary);
+  background: linear-gradient(180deg, rgba(23, 23, 23, 1) 0%, rgba(15, 15, 20, 1) 100%);
   border: 1px solid var(--border-hover);
   border-radius: var(--radius-lg);
-  box-shadow: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* ── Modals ────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 /* ── Buttons ───────────────────────────────── */
@@ -766,26 +812,32 @@ small {
 .dashboard {
   display: flex;
   min-height: 100vh;
+  position: relative;
 }
 
 .sidebar {
   width: 72px;
-  background: var(--bg-secondary);
-  border-right: 1px solid var(--border);
+  background: rgba(23, 23, 23, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   padding: 16px 0;
   position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
+  top: 20px;
+  left: 20px;
+  bottom: 20px;
   z-index: 100;
-  transition: width 0.3s ease;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .sidebar:hover {
   width: 200px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
 .sidebar-top {
@@ -823,9 +875,9 @@ small {
   align-items: center;
   gap: 14px;
   padding: 12px;
-  border-radius: var(--radius-sm);
+  border-radius: 16px;
   color: var(--text-muted);
-  transition: all var(--transition);
+  transition: background 0.2s, color 0.2s;
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
@@ -837,17 +889,14 @@ small {
 }
 
 .sidebar-item:hover {
-  background: var(--bg-tertiary);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--text-primary);
 }
 
 .sidebar-item.active {
-  background: linear-gradient(120deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.1) 100%);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(55, 71, 244, 0.1);
   color: var(--accent);
-  box-shadow: inset 3px 0 0 var(--accent), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  border-right: 1px solid rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(55, 71, 244, 0.2);
 }
 
 .sidebar-item.active .sidebar-icon {
@@ -879,14 +928,18 @@ small {
 /* ── Main Content ─────────────────────────── */
 .main-content {
   flex: 1;
-  margin-left: 72px;
+  margin-left: 112px; /* sidebar (72) + 20 left margin + 20 gap */
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  position: relative;
+  z-index: 10;
 }
 
 .main-header {
-  padding: 28px 40px 0;
+  padding: 24px 40px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  margin-bottom: 24px;
 }
 
 .header-greeting h1 {
@@ -919,17 +972,15 @@ small {
   padding: 4px 12px;
   font-size: 0.6875rem;
   font-weight: 700;
-  background: linear-gradient(120deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.25) 50%, rgba(255, 255, 255, 0.05) 75%);
+  background: linear-gradient(120deg, rgba(55, 71, 244, 0.1) 25%, rgba(55, 71, 244, 0.4) 50%, rgba(55, 71, 244, 0.1) 75%);
   background-size: 200% auto;
-  animation: glass-shimmer 3s linear infinite;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  color: var(--accent);
+  animation: glass-shimmer 8s linear infinite;
+  color: var(--text-primary);
   border-radius: 9999px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 2px 4px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(55, 71, 244, 0.4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 2px 8px rgba(55, 71, 244, 0.2);
 }
 
 .main-body {
