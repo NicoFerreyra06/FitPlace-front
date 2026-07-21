@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import UserProfile from '../components/UserProfile';
 import TodayRoutine from '../components/TodayRoutine';
 import AdminPanel from '../components/AdminPanel';
-import AdminGimnasioPanel from '../components/AdminGimnasioPanel';
+// import AdminGimnasioPanel from '../components/AdminGimnasioPanel'; // Oculto temporalmente
 import TrainerDashboard from '../components/TrainerDashboard';
 import TrainerCatalog from '../components/TrainerCatalog';
 
@@ -90,16 +90,17 @@ function getTabsForRole(rol) {
     return [
       ...base,
       { id: 'admin', label: 'Admin', icon: icons.shield },
-      { id: 'adminGimnasio', label: 'Mi Gym', icon: icons.building },
+      // { id: 'adminGimnasio', label: 'Mi Gym', icon: icons.building }, // Oculto temporalmente
     ];
   }
 
-  if (rol === 'ADMIN_GIMNASIO') {
-    return [
-      ...base,
-      { id: 'adminGimnasio', label: 'Mi Gym', icon: icons.shield },
-    ];
-  }
+  // Oculto temporalmente
+  // if (rol === 'ADMIN_GIMNASIO') {
+  //   return [
+  //     ...base,
+  //     { id: 'adminGimnasio', label: 'Mi Gym', icon: icons.shield },
+  //   ];
+  // }
 
   return base;
 }
@@ -129,7 +130,7 @@ export default function Dashboard() {
       case 'admin':
         return <AdminPanel />;
       case 'adminGimnasio':
-        return <AdminGimnasioPanel />;
+        return null; // <AdminGimnasioPanel /> oculto temporalmente
       case 'trainer':
         return <TrainerDashboard />;
       // Fallbacks para navegación legacy desde otros componentes
@@ -221,10 +222,10 @@ export default function Dashboard() {
               {activeTab === 'progreso' && 'Progreso y Estadísticas'}
               {activeTab === 'comunidadHub' && 'Comunidad'}
               {activeTab === 'amigos' && 'Comunidad'}
-              {activeTab === 'gimnasio' && 'Gimnasios'}
+              {/* {activeTab === 'gimnasio' && 'Gimnasios'} Oculto temporalmente */}
               {activeTab === 'entrenadores' && 'Catálogo de Entrenadores'}
               {activeTab === 'admin' && 'Panel de Administración'}
-              {activeTab === 'adminGimnasio' && 'Mi Gimnasio'}
+              {/* {activeTab === 'adminGimnasio' && 'Mi Gimnasio'} Oculto temporalmente */}
               {activeTab === 'trainer' && 'Mis Alumnos'}
             </h1>
             <div className="header-sub" style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>

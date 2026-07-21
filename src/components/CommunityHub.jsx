@@ -2,7 +2,7 @@ import { useState } from 'react';
 import DiscoverRoutines from './DiscoverRoutines';
 import Friends from './Friends';
 import Rankings from './Rankings';
-import GymFinder from './GymFinder';
+// import GymFinder from './GymFinder'; // Oculto temporalmente
 
 export default function CommunityHub({ onNavigate }) {
   const [activeSubTab, setActiveSubTab] = useState('rankings');
@@ -11,7 +11,7 @@ export default function CommunityHub({ onNavigate }) {
     { id: 'rankings', label: 'Rankings' },
     { id: 'social', label: 'Social' },
     { id: 'descubrir', label: 'Explorar Rutinas' },
-    { id: 'gimnasios', label: 'Gimnasios' }
+    // { id: 'gimnasios', label: 'Gimnasios' } // Oculto temporalmente
   ];
 
   const renderContent = () => {
@@ -19,7 +19,7 @@ export default function CommunityHub({ onNavigate }) {
       case 'rankings': return <Rankings />;
       case 'social': return <Friends />;
       case 'descubrir': return <DiscoverRoutines onNavigate={onNavigate} />;
-      case 'gimnasios': return <GymFinder />;
+      // case 'gimnasios': return <GymFinder />; // Oculto temporalmente
       default: return <Rankings />;
     }
   };
