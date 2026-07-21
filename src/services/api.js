@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://fitplace.onrender.com',
+  baseURL: '/api',
   headers: {
     'Content-Type': 'application/json',
   },
