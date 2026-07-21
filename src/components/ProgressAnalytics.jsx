@@ -3,6 +3,7 @@ import { getMyTrainingHistory } from '../services/trainingService';
 import { useAuth } from '../context/AuthContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp, Activity, AlertCircle } from 'lucide-react';
+import CustomSelect from './CustomSelect';
 
 export default function ProgressAnalytics() {
   const { user } = useAuth();
@@ -44,12 +45,13 @@ export default function ProgressAnalytics() {
       if (typeof session.fecha === 'string') {
         dateKey = session.fecha.split('T')[0];
       } else if (Array.isArray(session.fecha)) {
-        dateKey = session.fecha.join('-');
+        const [y, m, d] = session.fecha;
+        dateKey = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       } else {
         dateKey = String(session.fecha);
       }
       
-      if (!dataByDate[dateKey]) dataByDate[dateKey] = { fecha: dateKey };
+      if (!dataByDate[dateKey]) dataByDate[dateKey] = { fecha: dateKey, timestamp: new Date(dateKey).getTime() || 0 };
 
       session.marcasEjercicio.forEach(marca => {
         const name = marca.nombreEjercicio;
@@ -72,7 +74,7 @@ export default function ProgressAnalytics() {
 
     // Convert object to sorted array by date
     const sortedChartData = Object.values(dataByDate).sort((a, b) => {
-      return new Date(a.fecha) - new Date(b.fecha);
+      return a.timestamp - b.timestamp;
     });
 
     return { chartData: sortedChartData, availableExercises: availableExList };
@@ -130,16 +132,14 @@ export default function ProgressAnalytics() {
           <p className="text-secondary text-sm mt-xs">Evolución de peso máximo (kg)</p>
         </div>
         
-        <select 
-          value={selectedExercise}
-          onChange={(e) => setSelectedExercise(e.target.value)}
-          className="input"
-          style={{ width: 'auto', minWidth: '220px', maxWidth: '100%' }}
-        >
-          {availableExercises.map(ex => (
-            <option key={ex} value={ex}>{ex}</option>
-          ))}
-        </select>
+        <div style={{ width: '100%', minWidth: '220px', maxWidth: '300px' }}>
+          <CustomSelect 
+            options={availableExercises.map(ex => ({ value: ex, label: ex }))}
+            value={selectedExercise}
+            onChange={(val) => setSelectedExercise(val)}
+            placeholder="Seleccionar Ejercicio"
+          />
+        </div>
       </div>
 
       {filteredChartData.length < 1 ? (
@@ -157,6 +157,14 @@ export default function ProgressAnalytics() {
                 stroke="var(--text-muted)" 
                 tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
                 tickMargin={12}
+                tickFormatter={(val) => {
+                  const parts = val ? val.split('-') : [];
+                  if (parts.length === 3) {
+                    const dObj = new Date(parts[0], parts[1] - 1, parts[2]);
+                    if (!isNaN(dObj.getTime())) return dObj.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+                  }
+                  return val;
+                }}
               />
               <YAxis 
                 stroke="var(--text-muted)" 
@@ -172,6 +180,14 @@ export default function ProgressAnalytics() {
                 }}
                 itemStyle={{ color: 'var(--accent)', fontWeight: 'bold' }}
                 labelStyle={{ color: 'var(--text-secondary)', marginBottom: '4px' }}
+                labelFormatter={(val) => {
+                  const parts = val ? val.split('-') : [];
+                  if (parts.length === 3) {
+                    const dObj = new Date(parts[0], parts[1] - 1, parts[2]);
+                    if (!isNaN(dObj.getTime())) return dObj.toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: 'long', year: 'numeric' });
+                  }
+                  return val;
+                }}
               />
               <Line 
                 type="monotone" 

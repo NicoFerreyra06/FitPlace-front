@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { getAllGimnasios } from '../services/gimnasioService';
 import { createGimnasio, deleteGimnasio } from '../services/adminService';
 import { getAllEjercicios, createEjercicio, deleteEjercicio } from '../services/ejercicioService';
 import { getUsuarios, cambiarRol } from '../services/socialService';
+import CustomSelect from './CustomSelect';
 
 export default function AdminPanel() {
   const { user } = useAuth();
@@ -14,6 +16,7 @@ export default function AdminPanel() {
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState('');
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
 
   const showToast = (msg) => {
     setToast(msg);
@@ -277,22 +280,28 @@ export default function AdminPanel() {
                           </span>
                         </td>
                         <td style={{ textAlign: 'right' }}>
-                          <select 
-                            className="input" 
-                            style={{ padding: '4px 8px', width: '160px', display: 'inline-block', fontSize: '0.85rem', opacity: user?.rol !== 'ADMIN' ? 0.5 : 1 }}
-                            value={u.rol}
-                            disabled={user?.rol !== 'ADMIN'}
-                            onChange={(e) => {
-                              if(confirm(`¿Estás seguro de cambiar el rol de ${u.username} a ${e.target.value}?`)) {
-                                handleCambiarRol(u.id, e.target.value);
-                              }
-                            }}
-                          >
-                            <option value="USUARIO">USUARIO</option>
-                            <option value="ENTRENADOR">ENTRENADOR</option>
-                            <option value="ADMIN_GIMNASIO">ADMIN_GIMNASIO</option>
-                            <option value="ADMIN">ADMIN</option>
-                          </select>
+                          <div style={{ width: '200px', display: 'inline-block', textAlign: 'left' }}>
+                            <CustomSelect 
+                              options={[
+                                { value: 'USUARIO', label: 'USUARIO' },
+                                { value: 'ENTRENADOR', label: 'ENTRENADOR' },
+                                { value: 'ADMIN_GIMNASIO', label: 'ADMIN_GIMNASIO' },
+                                { value: 'ADMIN', label: 'ADMIN' },
+                              ]}
+                              value={u.rol}
+                              disabled={user?.rol !== 'ADMIN'}
+                              hideSearch={true}
+                              onChange={(val) => {
+                                const newRol = val;
+                                setConfirmDialog({
+                                  isOpen: true,
+                                  title: 'Cambiar Rol',
+                                  message: `¿Estás seguro de cambiar el rol de ${u.username} a ${newRol}?`,
+                                  onConfirm: () => handleCambiarRol(u.id, newRol)
+                                });
+                              }}
+                            />
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -382,14 +391,12 @@ export default function AdminPanel() {
                     </div>
                     <div className="form-group">
                       <label>Usuario Administrador</label>
-                      <select
-                        required
+                      <CustomSelect
+                        options={usuarios.map(u => ({ value: u.id, label: `${u.username} (${u.email})` }))}
                         value={gymForm.adminId}
-                        onChange={e => setGymForm({...gymForm, adminId: e.target.value})}
-                      >
-                        <option value="" disabled>Selecciona quién lo administrará...</option>
-                        {usuarios.map(u => <option key={u.id} value={u.id}>{u.username} ({u.email})</option>)}
-                      </select>
+                        onChange={val => setGymForm({...gymForm, adminId: val})}
+                        placeholder="Selecciona quién lo administrará..."
+                      />
                     </div>
                   </div>
 
@@ -450,21 +457,26 @@ export default function AdminPanel() {
                           <td style={{ textAlign: 'right' }}>
                             <button
                               className="btn-danger btn-sm"
-                              onClick={async () => {
-                                if (confirm(`¿Eliminar gimnasio ${g.nombre}?`)) {
-                                  try {
-                                    await deleteGimnasio(g.id);
-                                    showToast('Gimnasio eliminado');
-                                    loadData();
-                                  } catch (err) {
-                                    const errMsg = err.response?.data?.message || err.message || '';
-                                    if (errMsg.includes('Cannot delete or update a parent row') || errMsg.includes('constraint')) {
-                                      showToast('No puedes eliminar este gimnasio porque tiene usuarios con suscripciones activas o pasadas.');
-                                    } else {
-                                      showToast(errMsg || 'Error al eliminar el gimnasio');
+                              onClick={() => {
+                                setConfirmDialog({
+                                  isOpen: true,
+                                  title: 'Eliminar Gimnasio',
+                                  message: `¿Estás seguro de que deseas eliminar el gimnasio "${g.nombre}"? Esta acción no se puede deshacer.`,
+                                  onConfirm: async () => {
+                                    try {
+                                      await deleteGimnasio(g.id);
+                                      showToast('Gimnasio eliminado');
+                                      loadData();
+                                    } catch (err) {
+                                      const errMsg = err.response?.data?.message || err.message || '';
+                                      if (errMsg.includes('Cannot delete or update a parent row') || errMsg.includes('constraint')) {
+                                        showToast('No puedes eliminar este gimnasio porque tiene usuarios con suscripciones activas o pasadas.');
+                                      } else {
+                                        showToast(errMsg || 'Error al eliminar el gimnasio');
+                                      }
                                     }
                                   }
-                                }
+                                });
                               }}
                             >
                               <IconTrash />
@@ -575,21 +587,26 @@ export default function AdminPanel() {
                           <td style={{ textAlign: 'right' }}>
                             <button
                               className="btn-danger btn-sm"
-                              onClick={async () => {
-                                if (confirm(`¿Eliminar ejercicio ${ej.nombre}?`)) {
-                                  try {
-                                    await deleteEjercicio(ej.id);
-                                    showToast('Ejercicio eliminado');
-                                    loadData();
-                                  } catch (err) {
-                                    const errMsg = err.response?.data?.message || err.message || '';
-                                    if (errMsg.includes('Cannot delete or update a parent row') || errMsg.includes('constraint')) {
-                                      showToast('No puedes eliminar este ejercicio porque está siendo usado en una o más rutinas.');
-                                    } else {
-                                      showToast(errMsg || 'Error al eliminar');
+                              onClick={() => {
+                                setConfirmDialog({
+                                  isOpen: true,
+                                  title: 'Eliminar Ejercicio',
+                                  message: `¿Estás seguro de que deseas eliminar el ejercicio "${ej.nombre}"?`,
+                                  onConfirm: async () => {
+                                    try {
+                                      await deleteEjercicio(ej.id);
+                                      showToast('Ejercicio eliminado');
+                                      loadData();
+                                    } catch (err) {
+                                      const errMsg = err.response?.data?.message || err.message || '';
+                                      if (errMsg.includes('Cannot delete or update a parent row') || errMsg.includes('constraint')) {
+                                        showToast('No puedes eliminar este ejercicio porque está siendo usado en una o más rutinas.');
+                                      } else {
+                                        showToast(errMsg || 'Error al eliminar');
+                                      }
                                     }
                                   }
-                                }
+                                });
                               }}
                             >
                               <IconTrash />
@@ -616,6 +633,28 @@ export default function AdminPanel() {
           <div className="toast-success-dot" />
           <span className="font-semibold text-primary">{toast}</span>
         </div>
+      )}
+
+      {/* ── Custom Confirmation Modal ──────────────── */}
+      {confirmDialog.isOpen && createPortal(
+        <div className="modal-overlay" onClick={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}>
+          <div className="modal-content p-lg text-center animate-scale-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '350px' }}>
+            <h3 className="font-bold text-xl mb-xs">{confirmDialog.title}</h3>
+            <p className="text-secondary mb-md">{confirmDialog.message}</p>
+            <div className="flex gap-sm">
+              <button className="btn btn-secondary flex-1" onClick={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}>
+                Cancelar
+              </button>
+              <button className="btn btn-danger flex-1" onClick={() => {
+                if (confirmDialog.onConfirm) confirmDialog.onConfirm();
+                setConfirmDialog({ ...confirmDialog, isOpen: false });
+              }}>
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

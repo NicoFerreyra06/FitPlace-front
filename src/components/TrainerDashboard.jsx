@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { getAlumnos } from '../services/socialService';
 import { getRecordsPersonales, getHistorialEntrenamientos } from '../services/progressService';
 import { getMyRoutines, asignarRutinaAAlumno } from '../services/routineService';
+import CustomSelect from './CustomSelect';
 
 export default function TrainerDashboard() {
   const { user } = useAuth();
@@ -278,16 +279,12 @@ export default function TrainerDashboard() {
                 <div className="flex gap-md" style={{ alignItems: 'flex-end' }}>
                   <div className="form-group" style={{ flex: 1, margin: 0 }}>
                     <label>Elegí una de tus rutinas</label>
-                    <select
-                      className="input"
+                    <CustomSelect
+                      options={myRoutines.map(r => ({ value: r.id, label: r.nombre }))}
                       value={selectedRoutineToAssign}
-                      onChange={(e) => setSelectedRoutineToAssign(e.target.value)}
-                    >
-                      <option value="">-- Seleccionar Rutina --</option>
-                      {myRoutines.map(r => (
-                        <option key={r.id} value={r.id}>{r.nombre}</option>
-                      ))}
-                    </select>
+                      onChange={val => setSelectedRoutineToAssign(val)}
+                      placeholder="-- Seleccionar Rutina --"
+                    />
                   </div>
                   <button 
                     className="btn btn-primary" 

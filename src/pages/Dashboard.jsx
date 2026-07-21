@@ -152,6 +152,27 @@ export default function Dashboard() {
     }
   };
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return '¡Buenos días';
+    if (hour < 20) return '¡Buenas tardes';
+    return '¡Buenas noches';
+  };
+
+  const getMotivationalQuote = () => {
+    if (user.rol === 'ADMIN' || user.rol === 'ENTRENADOR') return '';
+    const quotes = [
+      "El único mal entrenamiento es el que no se hace. 💪",
+      "La disciplina es el puente entre tus metas y tus logros. 🔥",
+      "Hoy es un gran día para romper tus propios récords. 🚀",
+      "Tu cuerpo puede soportar casi cualquier cosa. Es tu mente a la que tienes que convencer. 🧠",
+      "No cuentes los días, haz que los días cuenten. ⏳"
+    ];
+    // Use the current day of the year to pick a stable random quote for the day
+    const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 1000 / 60 / 60 / 24);
+    return quotes[dayOfYear % quotes.length];
+  };
+
   return (
     <div className="dashboard">
       {/* Sidebar */}
@@ -188,9 +209,9 @@ export default function Dashboard() {
 
       {/* Main content */}
       <main className="main-content">
-        <header className="main-header">
-          <div className="header-greeting">
-            <h1>
+        <header className="main-header" style={{ position: 'relative', overflow: 'hidden' }}>
+          <div className="header-greeting animate-fade-in-up" style={{ zIndex: 1, position: 'relative' }}>
+            <h1 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               {activeTab === 'rutina' && 'Rutina de Hoy'}
               {activeTab === 'perfil' && 'Mi Perfil'}
               {activeTab === 'misRutinas' && 'Mis Rutinas'}
@@ -206,10 +227,34 @@ export default function Dashboard() {
               {activeTab === 'adminGimnasio' && 'Mi Gimnasio'}
               {activeTab === 'trainer' && 'Mis Alumnos'}
             </h1>
-            <p className="header-sub" style={{textDecoration: 'none'}}>
-              Bienvenido, <strong style={{textTransform: 'capitalize', textDecoration: 'none'}}>{user.nombre ? user.nombre : user.username.split('@')[0]}</strong>
-              <span className="role-badge">{user.rol}</span>
-            </p>
+            <div className="header-sub" style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '1.1rem', color: 'var(--text-secondary)' }}>
+                  {getGreeting()},{' '}
+                  <strong style={{ 
+                    textTransform: 'capitalize', 
+                    color: 'var(--text-primary)',
+                    fontWeight: '800'
+                  }}>
+                    {(user.nombre || user.username.split('@')[0]).trim()}
+                  </strong>!
+                </span>
+                <span className="role-badge" style={{ 
+                  boxShadow: '0 0 10px rgba(var(--primary-rgb), 0.3)',
+                  border: '1px solid rgba(var(--primary-rgb), 0.5)'
+                }}>{user.rol}</span>
+              </div>
+              {user.rol === 'ALUMNO' && (
+                <span style={{ 
+                  fontSize: '0.85rem', 
+                  color: 'var(--text-tertiary)', 
+                  fontStyle: 'italic',
+                  opacity: 0.8 
+                }}>
+                  {getMotivationalQuote()}
+                </span>
+              )}
+            </div>
           </div>
         </header>
 

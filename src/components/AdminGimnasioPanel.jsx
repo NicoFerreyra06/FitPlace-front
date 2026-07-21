@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { getMisGimnasios, updateGimnasio, activarSuscripcion, getMiembrosGimnasio, deleteGimnasio } from '../services/adminService';
 
@@ -176,17 +177,18 @@ export default function AdminGimnasioPanel() {
       </div>
 
       {/* Confirm Modal */}
-      {confirmDeleteId && (
-        <div className="modal-overlay animate-fade-in">
-          <div className="modal-content animate-scale-in">
-            <h3 className="text-xl font-bold text-danger">Eliminar Gimnasio</h3>
-            <p className="text-secondary">¿Estás seguro que querés eliminar este gimnasio? Esta acción no se puede deshacer y borrará todos los datos asociados.</p>
-            <div className="flex gap-sm justify-end mt-sm">
-              <button className="btn btn-secondary" onClick={() => setConfirmDeleteId(null)}>Volver</button>
-              <button className="btn btn-danger" onClick={executeDelete}>Sí, eliminar</button>
+      {confirmDeleteId && createPortal(
+        <div className="modal-overlay animate-fade-in" onClick={() => setConfirmDeleteId(null)}>
+          <div className="modal-content animate-scale-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '350px' }}>
+            <h3 className="text-xl font-bold text-danger mb-xs">Eliminar Gimnasio</h3>
+            <p className="text-secondary mb-md">¿Estás seguro que querés eliminar este gimnasio? Esta acción no se puede deshacer y borrará todos los datos asociados.</p>
+            <div className="flex gap-sm justify-end">
+              <button className="btn btn-secondary flex-1" onClick={() => setConfirmDeleteId(null)}>Volver</button>
+              <button className="btn btn-danger flex-1" onClick={executeDelete}>Sí, eliminar</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ── Loading skeleton ────────────────────── */}

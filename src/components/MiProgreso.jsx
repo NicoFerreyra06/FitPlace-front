@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { getRecordsPersonales, getHistorialEntrenamientos, getEvolucionEjercicio } from '../services/progressService';
 import { getAllEjercicios } from '../services/ejercicioService';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import CustomSelect from './CustomSelect';
 
 const TrophyIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -58,7 +59,7 @@ export default function MiProgreso() {
       ]);
 
       setPrs(prsData || []);
-      setLogs(logsData?.content || []);
+      setLogs(logsData?.content || logsData || []);
       setEjercicios(ejerciciosData || []);
       
       // Auto-select first exercise if available
@@ -76,10 +77,38 @@ export default function MiProgreso() {
     try {
       setChartLoading(true);
       const dataMap = await getEvolucionEjercicio(user.id, ejId);
-      // The backend returns a map like: { "Press Banca": [ { fecha, pesoMaximo }, ... ] }
-      const key = Object.keys(dataMap)[0];
-      if (key && dataMap[key]) {
-        setChartData(dataMap[key]);
+      
+      // Determine if data is a direct array or wrapped in a map { "Ejercicio": [...] }
+      let targetArray = [];
+      if (Array.isArray(dataMap)) {
+        targetArray = dataMap;
+      } else if (dataMap && typeof dataMap === 'object') {
+        const key = Object.keys(dataMap)[0];
+        if (key && Array.isArray(dataMap[key])) {
+          targetArray = dataMap[key];
+        }
+      }
+
+      if (targetArray.length > 0) {
+        // Parse and sort the data
+        const formattedData = targetArray.map((d, index) => {
+          let dateStr = d.fecha;
+          if (Array.isArray(dateStr)) {
+            // Arrays from backend: [year, month, day, hour, minute]
+            const [year, month, day] = dateStr;
+            dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          } else if (typeof dateStr === 'string' && dateStr.includes('T')) {
+            dateStr = dateStr.split('T')[0];
+          }
+          
+          // To prevent multiple workouts on the same day from collapsing into a single vertical spike,
+          // we add zero-width spaces or a counter to make the X-Axis keys technically unique for Recharts
+          const uniqueLabel = dateStr + '\u200B'.repeat(index); 
+          
+          return { ...d, fecha: uniqueLabel, rawDate: dateStr, originalIndex: index };
+        }).sort((a, b) => new Date(a.rawDate) - new Date(b.rawDate) || a.originalIndex - b.originalIndex);
+        
+        setChartData(formattedData);
       } else {
         setChartData([]);
       }
@@ -137,16 +166,14 @@ export default function MiProgreso() {
             <p className="text-sm text-secondary">Mirá cómo suben esos pesos a lo largo del tiempo.</p>
           </div>
           
-          <select 
-            className="input" 
-            style={{ width: 'auto', minWidth: '200px' }}
-            value={selectedEjercicioId}
-            onChange={(e) => setSelectedEjercicioId(e.target.value)}
-          >
-            {ejercicios.map(ej => (
-              <option key={ej.id} value={ej.id}>{ej.nombre}</option>
-            ))}
-          </select>
+          <div style={{ width: '100%', minWidth: '220px', maxWidth: '300px' }}>
+            <CustomSelect 
+              options={ejercicios.map(ej => ({ value: ej.id, label: ej.nombre }))}
+              value={selectedEjercicioId}
+              onChange={(val) => setSelectedEjercicioId(val)}
+              placeholder="Seleccionar Ejercicio"
+            />
+          </div>
         </div>
 
         {chartLoading ? (
@@ -169,7 +196,15 @@ export default function MiProgreso() {
                 </defs>
                 <XAxis 
                   dataKey="fecha" 
-                  tickFormatter={(val) => new Date(val).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })} 
+                  tickFormatter={(val) => {
+                    const cleanVal = val ? val.replace(/\u200B/g, '') : '';
+                    const parts = cleanVal.split('-');
+                    if (parts.length === 3) {
+                      const dObj = new Date(parts[0], parts[1] - 1, parts[2]);
+                      if (!isNaN(dObj.getTime())) return dObj.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+                    }
+                    return cleanVal;
+                  }} 
                   axisLine={false} 
                   tickLine={false} 
                   tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} 
@@ -184,7 +219,15 @@ export default function MiProgreso() {
                 <Tooltip 
                   contentStyle={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text-primary)' }}
                   itemStyle={{ color: 'var(--accent)', fontWeight: 'bold' }}
-                  labelFormatter={(val) => new Date(val).toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: 'long', year: 'numeric' })}
+                  labelFormatter={(val) => {
+                    const cleanVal = val ? val.replace(/\u200B/g, '') : '';
+                    const parts = cleanVal.split('-');
+                    if (parts.length === 3) {
+                      const dObj = new Date(parts[0], parts[1] - 1, parts[2]);
+                      if (!isNaN(dObj.getTime())) return dObj.toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: 'long', year: 'numeric' });
+                    }
+                    return cleanVal;
+                  }}
                 />
                 <Area type="monotone" dataKey="pesoMaximo" name="Peso (kg)" stroke="var(--accent)" strokeWidth={3} fillOpacity={1} fill="url(#colorPeso)" activeDot={{ r: 6, fill: 'var(--accent)', stroke: 'var(--bg-primary)', strokeWidth: 2 }} />
               </AreaChart>
@@ -208,7 +251,9 @@ export default function MiProgreso() {
                 <div className="timeline-dot"></div>
                 <div className="flex-col gap-xs">
                   <div className="flex items-center gap-sm">
-                    <span className="badge badge-accent font-mono">{log.fecha}</span>
+                    <span className="badge badge-accent font-mono">
+                      {Array.isArray(log.fecha) ? `${log.fecha[0]}-${String(log.fecha[1]).padStart(2, '0')}-${String(log.fecha[2]).padStart(2, '0')}` : (log.fecha?.split('T')[0] || 'Fecha desconocida')}
+                    </span>
                     <h4 className="font-bold text-lg">{log.nombreRutina || 'Rutina Personalizada'}</h4>
                   </div>
                   

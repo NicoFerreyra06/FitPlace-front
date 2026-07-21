@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getTodayRoutine } from '../services/routineService';
+import { getAllEjercicios } from '../services/ejercicioService';
 
 const DAY_TRANSLATION = {
   MONDAY: 'Lunes',
@@ -15,9 +16,11 @@ export default function TodayRoutine({ onNavigate }) {
   const [routine, setRoutine] = useState(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState('ACTIVE'); // ACTIVE, NO_ROUTINE, REST_DAY, ERROR
+  const [allEjercicios, setAllEjercicios] = useState([]);
 
   useEffect(() => {
     loadTodayRoutine();
+    getAllEjercicios().then(data => setAllEjercicios(data || [])).catch(console.error);
   }, []);
 
   const loadTodayRoutine = async () => {
@@ -104,16 +107,52 @@ export default function TodayRoutine({ onNavigate }) {
         </div>
       ) : (
         <div className="exercise-list">
-          {routine.ejercicioRutinas.map((ej, idx) => (
+          {routine.ejercicioRutinas.map((ej, idx) => {
+            const fullExercise = ej.ejercicio || allEjercicios.find(e => e.id === ej.ejercicioId || e.nombre === ej.nombreEjercicio);
+            
+            return (
             <div key={ej.id || idx} className="exercise-card animate-scale-in" style={{ animationDelay: `${idx * 100}ms`, opacity: 0 }}>
               <div>
                 <h4 className="exercise-name">{ej.nombreEjercicio}</h4>
                 <p className="exercise-detail">
                   {ej.series} series x {ej.repeticiones} repeticiones
                 </p>
+                
+                {/* Músculos afectados */}
+                {fullExercise && (fullExercise.musculoPrincipal || fullExercise.musculosSecundarios?.length > 0) && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center', marginTop: '8px' }}>
+                    {fullExercise.musculoPrincipal && (
+                      <span style={{ 
+                        fontSize: '11px', 
+                        fontWeight: '600', 
+                        color: 'var(--accent)', 
+                        background: 'rgba(55, 71, 244, 0.1)', 
+                        border: '1px solid rgba(55, 71, 244, 0.2)', 
+                        padding: '2px 8px', 
+                        borderRadius: '999px' 
+                      }}>
+                        {fullExercise.musculoPrincipal?.nombre || fullExercise.musculoPrincipal}
+                      </span>
+                    )}
+                    {fullExercise.musculosSecundarios?.map((m, mIdx) => (
+                      <span key={m.id || mIdx} style={{ 
+                        fontSize: '11px', 
+                        fontWeight: '500', 
+                        color: 'var(--text-secondary)', 
+                        background: 'var(--bg-tertiary)', 
+                        border: '1px solid var(--border)', 
+                        padding: '2px 8px', 
+                        borderRadius: '999px' 
+                      }}>
+                        {m.nombre || m}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

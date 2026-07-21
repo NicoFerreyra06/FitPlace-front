@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { getMyRoutines, deleteRutina, activarRutina } from '../services/routineService';
 import { useAuth } from '../context/AuthContext';
 
@@ -178,7 +179,7 @@ export default function MyRoutines({ onNavigate, onEdit }) {
       )}
 
       {/* Delete Confirmation Modal */}
-      {routineToDelete && (
+      {routineToDelete && createPortal(
         <div className="modal-overlay" onClick={() => setRoutineToDelete(null)}>
           <div className="modal-content p-lg text-center animate-scale-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '350px' }}>
             <h3 className="font-bold text-xl mb-xs">¿Eliminar Rutina?</h3>
@@ -201,7 +202,8 @@ export default function MyRoutines({ onNavigate, onEdit }) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {toast && (

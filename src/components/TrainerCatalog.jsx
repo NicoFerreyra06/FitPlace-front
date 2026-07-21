@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { assignTrainer, getTrainer, getEntrenadores } from '../services/userService';
+import { assignTrainer, getTrainer, getEntrenadores, removeTrainer } from '../services/userService';
 import { useAuth } from '../context/AuthContext';
 import { UserPlus, Star, Award, ChevronRight } from 'lucide-react';
 
@@ -51,6 +51,18 @@ export default function TrainerCatalog({ onNavigate }) {
     } catch (err) {
       console.error(err);
       const msg = err.response?.data?.message || 'Error al asignar el entrenador.';
+      showToast(msg);
+    }
+  };
+
+  const handleRemoveTrainer = async () => {
+    try {
+      await removeTrainer();
+      setCurrentTrainerId(null);
+      showToast('¡Has desvinculado a tu entrenador!');
+    } catch (err) {
+      console.error(err);
+      const msg = err.response?.data?.message || 'Error al desvincular el entrenador.';
       showToast(msg);
     }
   };
@@ -141,15 +153,24 @@ export default function TrainerCatalog({ onNavigate }) {
                 </div>
 
                 <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
-                  <button 
-                    className={`btn ${isCurrentTrainer ? 'btn-secondary' : 'btn-primary'} w-full`}
-                    style={{ justifyContent: 'center' }}
-                    onClick={() => handleAssignTrainer(trainer.id, trainer.nombre || trainer.username?.split('@')[0] || 'Entrenador')}
-                    disabled={isCurrentTrainer}
-                  >
-                    {isCurrentTrainer ? 'Seleccionado' : 'Asignarme este entrenador'}
-                    {!isCurrentTrainer && <ChevronRight size={18} style={{ marginLeft: '4px' }} />}
-                  </button>
+                  {isCurrentTrainer ? (
+                    <button 
+                      className="btn btn-danger w-full"
+                      style={{ justifyContent: 'center' }}
+                      onClick={() => handleRemoveTrainer()}
+                    >
+                      Desvincular Entrenador
+                    </button>
+                  ) : (
+                    <button 
+                      className="btn btn-primary w-full"
+                      style={{ justifyContent: 'center' }}
+                      onClick={() => handleAssignTrainer(trainer.id, trainer.nombre || trainer.username?.split('@')[0] || 'Entrenador')}
+                    >
+                      Asignarme este entrenador
+                      <ChevronRight size={18} style={{ marginLeft: '4px' }} />
+                    </button>
+                  )}
                 </div>
               </div>
             );

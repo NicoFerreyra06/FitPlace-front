@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { editarPerfil } from '../services/socialService';
 import { getMiSuscripcion, cancelarSuscripcion } from '../services/gimnasioService';
@@ -10,6 +11,7 @@ export default function UserProfile() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [msg, setMsg] = useState({ type: '', text: '' });
   const [currentSub, setCurrentSub] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
 
   const loadSubscription = async () => {
     try {
@@ -167,19 +169,26 @@ export default function UserProfile() {
               <button
                 className="btn btn-danger"
                 onClick={() => {
-                    cancelarSuscripcion(currentSub.id)
-                      .then(() => {
-                        setMsg({ type: 'success', text: 'Te desvinculaste correctamente del gimnasio.' });
-                        setShowSuccessModal(true);
-                        setTimeout(() => setShowSuccessModal(false), 3000);
-                        loadSubscription();
-                        refreshUser();
-                      })
-                      .catch((err) => {
-                        const data = err.response?.data;
-                        const errorMsg = data?.message || (typeof data === 'string' ? data : null) || 'Error al desvincular la suscripción.';
-                        setMsg({ type: 'error', text: errorMsg });
-                      });
+                  setConfirmDialog({
+                    isOpen: true,
+                    title: 'Desvincular Gimnasio',
+                    message: `¿Estás seguro que deseas desvincularte de ${currentSub.gimnasio?.nombre || 'este gimnasio'}?`,
+                    onConfirm: () => {
+                      cancelarSuscripcion(currentSub.id)
+                        .then(() => {
+                          setMsg({ type: 'success', text: 'Te desvinculaste correctamente del gimnasio.' });
+                          setShowSuccessModal(true);
+                          setTimeout(() => setShowSuccessModal(false), 3000);
+                          loadSubscription();
+                          refreshUser();
+                        })
+                        .catch((err) => {
+                          const data = err.response?.data;
+                          const errorMsg = data?.message || (typeof data === 'string' ? data : null) || 'Error al desvincular la suscripción.';
+                          setMsg({ type: 'error', text: errorMsg });
+                        });
+                    }
+                  });
                 }}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 8}}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -235,6 +244,28 @@ export default function UserProfile() {
           <div className="toast-success-dot"></div>
           <span className="font-bold text-primary text-sm">Cambios guardados correctamente</span>
         </div>
+      )}
+
+      {/* ── Custom Confirmation Modal ──────────────── */}
+      {confirmDialog.isOpen && createPortal(
+        <div className="modal-overlay" onClick={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}>
+          <div className="modal-content p-lg text-center animate-scale-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '350px' }}>
+            <h3 className="font-bold text-xl mb-xs">{confirmDialog.title}</h3>
+            <p className="text-secondary mb-md">{confirmDialog.message}</p>
+            <div className="flex gap-sm">
+              <button className="btn btn-secondary flex-1" onClick={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}>
+                Cancelar
+              </button>
+              <button className="btn btn-danger flex-1" onClick={() => {
+                if (confirmDialog.onConfirm) confirmDialog.onConfirm();
+                setConfirmDialog({ ...confirmDialog, isOpen: false });
+              }}>
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

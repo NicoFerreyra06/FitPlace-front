@@ -3,6 +3,8 @@ import { getAllEjercicios } from '../services/ejercicioService';
 import { createRutina, updateRutina, activarRutina } from '../services/routineService';
 import { useAuth } from '../context/AuthContext';
 
+import CustomSelect from './CustomSelect';
+
 const DAYS_OF_WEEK = [
   { value: 'MONDAY', label: 'Lunes' },
   { value: 'TUESDAY', label: 'Martes' },
@@ -18,7 +20,6 @@ export default function CreateRoutine({ onNavigate, editingRoutine, setEditingRo
   const [allEjercicios, setAllEjercicios] = useState([]);
   
   const [nombre, setNombre] = useState('');
-  const [precio, setPrecio] = useState('');
   const [dias, setDias] = useState([]); 
   
   const [loading, setLoading] = useState(false);
@@ -33,7 +34,6 @@ export default function CreateRoutine({ onNavigate, editingRoutine, setEditingRo
   useEffect(() => {
     if (editingRoutine) {
       setNombre(editingRoutine.nombre);
-      setPrecio(editingRoutine.precio || '');
       
       const loadedDias = (editingRoutine.diaRutinas || []).map((dia, idx) => ({
         tempId: generateId(),
@@ -48,7 +48,6 @@ export default function CreateRoutine({ onNavigate, editingRoutine, setEditingRo
       setDias(loadedDias);
     } else {
       setNombre('');
-      setPrecio('');
       setDias([]);
     }
   }, [editingRoutine]);
@@ -131,7 +130,6 @@ export default function CreateRoutine({ onNavigate, editingRoutine, setEditingRo
 
     const payload = {
       nombre,
-      precio: user?.rol === 'ENTRENADOR' ? parseFloat(precio) || 0 : 0,
       dias: diasPayload
     };
 
@@ -185,20 +183,6 @@ export default function CreateRoutine({ onNavigate, editingRoutine, setEditingRo
               required
             />
           </div>
-
-          {user?.rol === 'ENTRENADOR' && (
-            <div className="form-group">
-              <label>Precio (Opcional)</label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={precio}
-                onChange={e => setPrecio(e.target.value)}
-                placeholder="0.00"
-              />
-            </div>
-          )}
         </div>
 
         <div className="flex-col gap-md">
@@ -212,15 +196,14 @@ export default function CreateRoutine({ onNavigate, editingRoutine, setEditingRo
           {dias.map((dia, idx) => (
             <div key={dia.tempId} className="card p-md border border-hover">
               <div className="flex-between mb-md">
-                <div className="form-group" style={{ maxWidth: '200px' }}>
-                  <select
+                <div className="form-group" style={{ maxWidth: '200px', width: '100%' }}>
+                  <CustomSelect
+                    options={DAYS_OF_WEEK}
                     value={dia.diaDeLaSemana}
-                    onChange={e => handleDayChange(dia.tempId, 'diaDeLaSemana', e.target.value)}
-                  >
-                    {DAYS_OF_WEEK.map(d => (
-                      <option key={d.value} value={d.value}>{d.label}</option>
-                    ))}
-                  </select>
+                    onChange={val => handleDayChange(dia.tempId, 'diaDeLaSemana', val)}
+                    placeholder="Seleccionar Día"
+                    hideSearch={true}
+                  />
                 </div>
                 <button type="button" className="btn btn-danger btn-sm" onClick={() => handleRemoveDay(dia.tempId)}>
                   Eliminar Día
@@ -230,17 +213,17 @@ export default function CreateRoutine({ onNavigate, editingRoutine, setEditingRo
               <div className="flex-col gap-sm pl-md border-l border-border mt-sm">
                 {dia.ejercicios.map((ex, exIdx) => (
                   <div key={ex.tempId} className="flex flex-col md:flex-row gap-sm items-start md:items-center bg-tertiary p-sm rounded-sm">
-                    <div className="form-group flex-1 w-full">
-                      <select
+                    <div className="form-group flex-1 w-full" style={{ minWidth: '250px' }}>
+                      <CustomSelect
+                        options={allEjercicios.map(e => ({
+                          value: e.id,
+                          label: e.nombre,
+                          sublabel: e.musculoPrincipal?.nombre || e.musculoPrincipal || ''
+                        }))}
                         value={ex.ejercicioId}
-                        onChange={e => handleExerciseChange(dia.tempId, ex.tempId, 'ejercicioId', e.target.value)}
-                        required
-                      >
-                        <option value="">Seleccionar Ejercicio</option>
-                        {allEjercicios.map(e => (
-                          <option key={e.id} value={e.id}>{e.nombre}</option>
-                        ))}
-                      </select>
+                        onChange={val => handleExerciseChange(dia.tempId, ex.tempId, 'ejercicioId', val)}
+                        placeholder="Seleccionar Ejercicio"
+                      />
                     </div>
                     
                     <div className="flex gap-sm w-full md:w-auto">
