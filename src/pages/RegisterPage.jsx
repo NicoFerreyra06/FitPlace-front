@@ -50,8 +50,16 @@ export default function RegisterPage() {
       });
       navigate('/dashboard');
     } catch (err) {
-      const msg = err.response?.data?.message || err.response?.data || 'Error al registrarse';
-      setError(typeof msg === 'string' ? msg : 'Error en el registro');
+      console.error('Register error:', err);
+      if (!err.response) {
+        // Network error / CORS / backend down
+        setError('No se pudo conectar con el servidor. Verificá tu conexión o intentá de nuevo en unos segundos.');
+      } else {
+        const data = err.response.data;
+        const msg = typeof data === 'string' ? data
+          : data?.message || data?.error || JSON.stringify(data);
+        setError(msg || 'Error en el registro');
+      }
     } finally {
       setLoading(false);
     }
